@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net461;netstandard2.0;netstandard2.1</TargetFrameworks>
+        <LangVersion>10</LangVersion>
+        <Nullable>enable</Nullable>
+        <RootNamespace>GerardSmit.Mediator</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="IsExternalInit" Version="1.0.2" PrivateAssets="all" />
+        <PackageReference Include="MediatR.Contracts" Version="1.0.1" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'netstandard2.0'">
+        <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
+    </ItemGroup>
+
+</Project>
