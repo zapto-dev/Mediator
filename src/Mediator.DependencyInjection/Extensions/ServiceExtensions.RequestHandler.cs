@@ -58,21 +58,39 @@ public static partial class ServiceExtensions
 
     public static IServiceCollection AddRequestHandler<TRequest, TResponse>(
         this IServiceCollection services,
-        Func<TRequest, ValueTask<TResponse>> handler,
+        Func<IServiceProvider, TRequest, ValueTask<TResponse>> handler,
         MediatorNamespace? ns = null)
         where TRequest : IRequest<TResponse>
     {
-        AddRequestHandler(services, new FuncRequestHandler<TRequest, TResponse>(handler), ns);
+        if (ns == null)
+        {
+            services.AddScoped<IRequestHandler<TRequest, TResponse>>(p =>
+                new FuncRequestHandler<TRequest, TResponse>(handler, p));
+        }
+        else
+        {
+            services.AddSingleton<INamespaceRequestHandler<TRequest, TResponse>>(p =>
+                new NamespaceRequestHandler<TRequest, TResponse>(ns.Value,
+                    new FuncRequestHandler<TRequest, TResponse>(handler, p)));
+        }
+
         return services;
     }
 
-    public static IServiceCollection AddRequestHandler<TRequest, TResponse>(
+    public static IServiceCollection AddRequestHandler(
         this IServiceCollection services,
-        Func<TRequest, TResponse> handler,
+        Delegate handler,
         MediatorNamespace? ns = null)
-        where TRequest : IRequest<TResponse>
     {
-        AddRequestHandler<TRequest, TResponse>(services, r => new ValueTask<TResponse>(handler(r)), ns);
+        RegisterHandler(
+            registerMethodName: nameof(AddRequestHandler),
+            parameterTypeTarget: typeof(IRequest<>),
+            noResultMessage: "No request found in delegate",
+            multipleResultMessage: "Multiple requests found in delegate",
+            services: services,
+            handler: handler,
+            ns: ns);
+
         return services;
     }
 }

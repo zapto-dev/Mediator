@@ -4,9 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 var upperNs = new MediatorNamespace("upper");
 
-// Create provider with notification handler
 await using var provider = new ServiceCollection()
     .AddMediator()
+    .AddRequestHandler((GetMessage _) => "Hello world")
     .AddNotificationHandler((WriteLineNotification notification) =>
     {
         Console.WriteLine(notification.Message);
@@ -17,14 +17,12 @@ await using var provider = new ServiceCollection()
     }, upperNs)
     .BuildServiceProvider();
 
-// Get the mediator
 var mediator = provider.GetRequiredService<IMediator>();
+var message = await mediator.GetMessageAsync();
 
-// Send to handlers without namespace
-await mediator.WriteLineAsync("Hello World!");
+await mediator.WriteLineAsync(message);
+await mediator.WriteLineAsync(upperNs, message);
 
-// Send to the upper namespace
-await mediator.WriteLineAsync(upperNs, "Hello World!");
-
-// Notification type
 public record struct WriteLineNotification(string Message) : INotification;
+
+public record struct GetMessage : IRequest<string>;

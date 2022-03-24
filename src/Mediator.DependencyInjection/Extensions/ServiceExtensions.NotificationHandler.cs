@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,25 +52,39 @@ public static partial class ServiceExtensions
 
     public static IServiceCollection AddNotificationHandler<TNotification>(
         this IServiceCollection services,
-        Func<TNotification, ValueTask> handler,
+        Func<IServiceProvider, TNotification, ValueTask> handler,
         MediatorNamespace? ns = null)
         where TNotification : INotification
     {
-        AddNotificationHandler(services, new FuncNotificationHandler<TNotification>(handler), ns);
+        if (ns == null)
+        {
+            services.AddScoped<INotificationHandler<TNotification>>(p =>
+                new FuncNotificationHandler<TNotification>(handler, p));
+        }
+        else
+        {
+            services.AddScoped<INamespaceNotificationHandler<TNotification>>(p =>
+                new NamespaceNotificationHandler<TNotification>(ns.Value,
+                    new FuncNotificationHandler<TNotification>(handler, p)));
+        }
+
         return services;
     }
 
-    public static IServiceCollection AddNotificationHandler<TNotification>(
+    public static IServiceCollection AddNotificationHandler(
         this IServiceCollection services,
-        Action<TNotification> handler,
+        Delegate handler,
         MediatorNamespace? ns = null)
-        where TNotification : INotification
     {
-        AddNotificationHandler<TNotification>(services, n =>
-        {
-            handler(n);
-            return default;
-        }, ns);
+        RegisterHandler(
+            registerMethodName: nameof(AddNotificationHandler),
+            parameterTypeTarget: typeof(INotification),
+            noResultMessage: "No notification found in delegate",
+            multipleResultMessage: "Multiple notifications found in delegate",
+            services: services,
+            handler: handler,
+            ns: ns);
+
         return services;
     }
 }

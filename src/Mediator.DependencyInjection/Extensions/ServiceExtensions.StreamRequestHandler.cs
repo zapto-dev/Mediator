@@ -59,11 +59,39 @@ public static partial class ServiceExtensions
 
     public static IServiceCollection AddStreamRequestHandler<TRequest, TResponse>(
         this IServiceCollection services,
-        Func<TRequest, IAsyncEnumerable<TResponse>> handler,
+        Func<IServiceProvider, TRequest, IAsyncEnumerable<TResponse>> handler,
         MediatorNamespace? ns = null)
         where TRequest : IStreamRequest<TResponse>
     {
-        AddStreamRequestHandler(services, new FuncStreamRequestHandler<TRequest, TResponse>(handler), ns);
+        if (ns == null)
+        {
+            services.AddScoped<IStreamRequestHandler<TRequest, TResponse>>(p =>
+                new FuncStreamRequestHandler<TRequest, TResponse>(handler, p));
+        }
+        else
+        {
+            services.AddSingleton<INamespaceStreamRequestHandler<TRequest, TResponse>>(p =>
+                new NamespaceStreamRequestHandler<TRequest, TResponse>(ns.Value,
+                    new FuncStreamRequestHandler<TRequest, TResponse>(handler, p)));
+        }
+
+        return services;
+    }
+
+    public static IServiceCollection AddStreamRequestHandler(
+        this IServiceCollection services,
+        Delegate handler,
+        MediatorNamespace? ns = null)
+    {
+        RegisterHandler(
+            registerMethodName: nameof(AddStreamRequestHandler),
+            parameterTypeTarget: typeof(IStreamRequest<>),
+            noResultMessage: "No stream request found in delegate",
+            multipleResultMessage: "Multiple stream requests found in delegate",
+            services: services,
+            handler: handler,
+            ns: ns);
+
         return services;
     }
 }
