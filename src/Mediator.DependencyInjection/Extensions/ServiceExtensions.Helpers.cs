@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -9,6 +10,10 @@ namespace Zapto.Mediator;
 
 public static partial class ServiceExtensions
 {
+    private static readonly ConstructorInfo NewValueTaskConstructor = typeof(ValueTask).GetConstructor(new[] {typeof(Task)})!;
+    private static readonly MethodInfo CastValueTaskMethod = typeof(ServiceExtensions).GetMethod(nameof(CastValueTask), BindingFlags.NonPublic | BindingFlags.Static)!;
+    private static readonly MethodInfo CastTaskMethod = typeof(ServiceExtensions).GetMethod(nameof(CastTask), BindingFlags.NonPublic | BindingFlags.Static)!;
+
     private static void RegisterHandler(
         string registerMethodName,
         Type parameterTypeTarget,
@@ -79,7 +84,7 @@ public static partial class ServiceExtensions
             else if (call.Type == typeof(Task) ||
                      call.Type.IsGenericType && call.Type.GetGenericTypeDefinition() == typeof(Task<>))
             {
-                result = Expression.New(typeof(ValueTask).GetConstructor(new[] {typeof(Task)}), call);
+                result = Expression.New(NewValueTaskConstructor, call);
             }
             else
             {
@@ -92,57 +97,65 @@ public static partial class ServiceExtensions
 
             if (call.Type.IsGenericType && call.Type.GetGenericTypeDefinition() == typeof(ValueTask<>))
             {
-                var valueType = call.Type.GetGenericArguments()[0];
+                var fromType = call.Type.GetGenericArguments()[0];
 
-                if (valueType == resultType)
+                if (fromType == resultType)
                 {
                     result = call;
                 }
-                else if (resultType.IsAssignableFrom(valueType))
+                else if (resultType.CanConvertFrom(fromType, out var converter))
                 {
                     result = Expression.Call(
-                        typeof(ServiceExtensions).GetMethod(nameof(CastValueTask))
-                            .MakeGenericMethod(resultType, valueType),
-                        call
+                        CastValueTaskMethod.MakeGenericMethod(fromType, resultType),
+                        call,
+                        Expression.Constant(converter)
                     );
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Cannot cast result {valueType.Name} to {resultType.Name}");
+                    throw new InvalidOperationException($"Cannot cast result {fromType.Name} to {resultType.Name}");
                 }
             }
             else if (call.Type.IsGenericType && call.Type.GetGenericTypeDefinition() == typeof(Task<>))
             {
-                var valueType = call.Type.GetGenericArguments()[0];
+                var fromType = call.Type.GetGenericArguments()[0];
 
-                if (valueType == resultType)
+                if (fromType == resultType)
                 {
                     result = Expression.New(
                         typeof(ValueTask<>)
                             .MakeGenericType(resultType)
-                            .GetConstructor(new[] {typeof(Task)}),
+                            .GetConstructor(new[] { typeof(Task<>).MakeGenericType(resultType) })!,
                         call);
                 }
-                else if (resultType.IsAssignableFrom(valueType))
+                else if (resultType.CanConvertFrom(fromType, out var converter))
                 {
                     result = Expression.Call(
-                        typeof(ServiceExtensions).GetMethod(nameof(CastTask))
-                            .MakeGenericMethod(resultType, valueType),
-                        call
+                        CastTaskMethod.MakeGenericMethod(fromType, resultType),
+                        call,
+                        Expression.Constant(converter)
                     );
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Cannot cast result {valueType.Name} to {resultType.Name}");
+                    throw new InvalidOperationException($"Cannot cast result {fromType.Name} to {resultType.Name}");
                 }
             }
-            else if (resultType == call.Type || resultType.IsAssignableFrom(call.Type))
+            else if (resultType == call.Type)
             {
                 result = Expression.New(
                     typeof(ValueTask<>)
                         .MakeGenericType(resultType)
-                        .GetConstructor(new[] { resultType }),
+                        .GetConstructor(new[] { resultType })!,
                     call);
+            }
+            else if (resultType.CanConvertFrom(call.Type, out _))
+            {
+                result = Expression.New(
+                    typeof(ValueTask<>)
+                        .MakeGenericType(resultType)
+                        .GetConstructor(new[] { resultType })!,
+                    Expression.Convert(call, resultType));
             }
             else
             {
@@ -164,7 +177,26 @@ public static partial class ServiceExtensions
             .Invoke(null, new object?[] {services, lambda, ns});
     }
 
-    public static async ValueTask<T1> CastValueTask<T1, T2>(ValueTask<T2> result) where T2 : T1 => await result;
+    private static async ValueTask<TTo> CastValueTask<TFrom, TTo>(ValueTask<TFrom> result, Func<TFrom, TTo> converter)
+        => converter(await result);
 
-    public static async ValueTask<T1> CastTask<T1, T2>(Task<T2> result) where T2 : T1 => await result;
+    private static async ValueTask<TTo> CastTask<TFrom, TTo>(Task<TFrom> result, Func<TFrom, TTo> converter)
+        => converter(await result);
+
+    private static bool CanConvertFrom(this Type to, Type from, out object converter)
+    {
+        UnaryExpression BodyFunction(Expression body) => Expression.Convert(body, to);
+
+        try
+        {
+            var x = Expression.Parameter(from, "x");
+            converter = Expression.Lambda(BodyFunction(x), x).Compile();
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            converter = null!;
+            return false;
+        }
+    }
 }

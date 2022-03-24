@@ -77,21 +77,4 @@ public static partial class ServiceExtensions
 
         return services;
     }
-
-    public static IServiceCollection AddStreamRequestHandler(
-        this IServiceCollection services,
-        Delegate handler,
-        MediatorNamespace? ns = null)
-    {
-        RegisterHandler(
-            registerMethodName: nameof(AddStreamRequestHandler),
-            parameterTypeTarget: typeof(IStreamRequest<>),
-            noResultMessage: "No stream request found in delegate",
-            multipleResultMessage: "Multiple stream requests found in delegate",
-            services: services,
-            handler: handler,
-            ns: ns);
-
-        return services;
-    }
 }

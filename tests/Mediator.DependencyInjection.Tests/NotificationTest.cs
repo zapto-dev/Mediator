@@ -30,7 +30,6 @@ public class NotificationTest
         handler.Verify(x => x.Handle(It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
-
     [Fact]
     public async Task TestNamespaceNotification()
     {
