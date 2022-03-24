@@ -1,4 +1,4 @@
-﻿//HintName: RequestExtensions.g.cs
+﻿//HintName: MediatorExtensions.g.cs
 #nullable enable
 
 public static class TestsSenderExtensions
