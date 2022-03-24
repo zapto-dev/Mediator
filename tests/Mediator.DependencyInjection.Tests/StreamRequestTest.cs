@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Zapto.Mediator;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Xunit;
 
 namespace Mediator.DependencyInjection.Tests;
@@ -17,64 +18,50 @@ public class StreamRequestTest
     [Fact]
     public async Task TestStream()
     {
-        const int expected = 1;
+        var handler = new Mock<IStreamRequestHandler<StreamRequest, int>>();
 
-        async IAsyncEnumerable<int> Test(StreamRequest a)
-        {
-            await Task.Yield();
-            yield return expected;
-        }
+        handler.Setup(h => h.Handle(It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(Array.Empty<int>().ToAsyncEnumerable());
 
         var serviceProvider = new ServiceCollection()
             .AddMediator()
-            .AddStreamRequestHandler<StreamRequest, int>(Test)
+            .AddStreamRequestHandler(handler.Object)
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
 
-        var result = await mediator
+        await mediator
             .CreateStream<StreamRequest, int>(new StreamRequest())
-            .FirstOrDefaultAsync();
+            .ToListAsync();
 
-        Assert.Equal(expected, result);
+        handler.Verify(x => x.Handle(It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task TestNamespaceStream()
     {
         var ns = new MediatorNamespace("test");
-        const int expectedGlobal = 1;
-        const int expectedNs = 2;
+        var handler = new Mock<IStreamRequestHandler<StreamRequest, int>>();
 
-        async IAsyncEnumerable<int> TestGlobal(StreamRequest a)
-        {
-            await Task.Yield();
-            yield return expectedGlobal;
-        }
-
-        async IAsyncEnumerable<int> TestNamespace(StreamRequest a)
-        {
-            await Task.Yield();
-            yield return expectedNs;
-        }
+        handler.Setup(h => h.Handle(It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(Array.Empty<int>().ToAsyncEnumerable());
 
         var serviceProvider = new ServiceCollection()
             .AddMediator()
-            .AddStreamRequestHandler<StreamRequest, int>(TestGlobal)
-            .AddStreamRequestHandler<StreamRequest, int>(TestNamespace, ns)
+            .AddStreamRequestHandler(handler.Object)
+            .AddStreamRequestHandler(handler.Object, ns)
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
 
-        var resultGlobal = await mediator
+        await mediator
             .CreateStream<StreamRequest, int>(new StreamRequest())
-            .FirstOrDefaultAsync();
+            .ToListAsync();
 
-        var resultNs = await mediator
+        await mediator
             .CreateStream<StreamRequest, int>(ns, new StreamRequest())
-            .FirstOrDefaultAsync();
+            .ToListAsync();
 
-        Assert.Equal(expectedGlobal, resultGlobal);
-        Assert.Equal(expectedNs, resultNs);
+        handler.Verify(x => x.Handle(It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 }

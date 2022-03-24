@@ -1,9 +1,9 @@
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Zapto.Mediator;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Xunit;
 
 namespace Mediator.DependencyInjection.Tests;
@@ -15,27 +15,19 @@ public class NotificationTest
     [Fact]
     public async Task TestNotification()
     {
-        var invokedOne = false;
-        var invokedTwo = false;
+        var handler = new Mock<INotificationHandler<Notification>>();
 
         var serviceProvider = new ServiceCollection()
             .AddMediator()
-            .AddNotificationHandler((Notification _) =>
-            {
-                invokedOne = true;
-            })
-            .AddNotificationHandler((Notification _) =>
-            {
-                invokedTwo = true;
-            })
+            .AddNotificationHandler(handler.Object)
+            .AddNotificationHandler(handler.Object)
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
 
         await mediator.Publish(new Notification());
 
-        Assert.True(invokedOne, "Notification handler one was not invoked");
-        Assert.True(invokedTwo, "Notification handler two was not invoked");
+        handler.Verify(x => x.Handle(It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
 
@@ -43,29 +35,19 @@ public class NotificationTest
     public async Task TestNamespaceNotification()
     {
         var ns = new MediatorNamespace("test");
-        const int expectedGlobal = 1;
-        const int expectedNs = 2;
-
-        var result = 0;
+        var handler = new Mock<INotificationHandler<Notification>>();
 
         var serviceProvider = new ServiceCollection()
             .AddMediator()
-            .AddNotificationHandler((Notification _) =>
-            {
-                result = expectedGlobal;
-            })
-            .AddNotificationHandler((Notification _) =>
-            {
-                result = expectedNs;
-            }, ns)
+            .AddNotificationHandler(handler.Object)
+            .AddNotificationHandler(handler.Object, ns)
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
 
         await mediator.Publish(new Notification());
-        Assert.Equal(expectedGlobal, result);
-
         await mediator.Publish(ns, new Notification());
-        Assert.Equal(expectedNs, result);
+
+        handler.Verify(x => x.Handle(It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 }
