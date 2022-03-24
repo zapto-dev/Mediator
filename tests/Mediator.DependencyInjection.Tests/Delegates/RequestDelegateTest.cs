@@ -103,7 +103,6 @@ public class RequestDelegateTest
         );
     }
 
-
     [Fact]
     public void InvalidReturnType()
     {
@@ -112,6 +111,28 @@ public class RequestDelegateTest
             new ServiceCollection()
                 .AddMediator()
                 .AddRequestHandler((StringRequest _) => 1);
+        });
+    }
+
+    [Fact]
+    public void InvalidReturnTaskType()
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            new ServiceCollection()
+                .AddMediator()
+                .AddRequestHandler((StringRequest _) => Task.FromResult(1));
+        });
+    }
+
+    [Fact]
+    public void InvalidReturnValueTaskType()
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            new ServiceCollection()
+                .AddMediator()
+                .AddRequestHandler((StringRequest _) => new ValueTask<int>(1));
         });
     }
 
