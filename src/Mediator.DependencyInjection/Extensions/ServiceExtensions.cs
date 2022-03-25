@@ -6,10 +6,10 @@ public static partial class ServiceExtensions
 {
     public static IServiceCollection AddMediator(this IServiceCollection services)
     {
-        services.AddScoped<IMediator, ServiceProviderMediator>();
-        services.AddScoped<ISender>(i => i.GetRequiredService<IMediator>());
-        services.AddScoped<IPublisher>(i => i.GetRequiredService<IMediator>());
-        services.AddScoped(typeof(IRequestHandler<,>), typeof(GenericRequestHandler<,>));
+        services.AddTransient<IMediator, ServiceProviderMediator>();
+        services.AddTransient<ISender, ServiceProviderMediator>();
+        services.AddTransient<IPublisher, ServiceProviderMediator>();
+        services.AddTransient(typeof(IRequestHandler<,>), typeof(GenericRequestHandler<,>));
         return services;
     }
 }
