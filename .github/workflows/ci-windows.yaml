@@ -3,7 +3,7 @@ name: .NET Framework
 on: [push]
 
 jobs:
-  build:
+  test:
 
     runs-on: windows-latest
 
