@@ -72,9 +72,17 @@ public static class StringBuilderExtensions
             return;
         }
 
-        sb.Append("global::");
-        AppendNamespace(sb, type.ContainingNamespace);
-        sb.Append(type.Name);
+        if (type is ITypeParameterSymbol)
+        {
+            sb.Append(type.Name);
+            addNullable = false;
+        }
+        else
+        {
+            sb.Append("global::");
+            AppendNamespace(sb, type.ContainingNamespace);
+            sb.Append(type.Name);
+        }
 
         if (type is INamedTypeSymbol {IsGenericType: true} namedTypeSymbol)
         {
@@ -95,7 +103,8 @@ public static class StringBuilderExtensions
         }
 
         if (addNullable &&
-            type.Name != "Nullable" &&
+            !type.IsValueType &&
+            type.Name is not ("Nullable" or "ValueTask") &&
             type.NullableAnnotation is NullableAnnotation.Annotated or NullableAnnotation.None)
         {
             sb.Append('?');

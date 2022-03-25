@@ -105,12 +105,6 @@ public class SenderGenerator : IIncrementalGenerator
 
             var symbol = (INamedTypeSymbol) GetModel(syntaxNode).GetDeclaredSymbol(syntaxNode)!;
 
-            if (symbol.IsGenericType)
-            {
-                // TODO: Support generic types
-                continue;
-            }
-
             foreach (var current in symbol.AllInterfaces)
             {
                 if (methodsByType.TryGetValue((current.GetNamespace(), current.Name), out var results) &&
@@ -205,20 +199,43 @@ public class SenderGenerator : IIncrementalGenerator
                         }
 
                         sb.Append("static ");
-                        sb.AppendType(method.ReturnType, middleware: t =>
-                        {
-                            if (!typeNames.TryGetValue(t.Name, out var result))
+                        sb.AppendType(method.ReturnType,
+                            addNullable: false,
+                            middleware: t =>
                             {
-                                return false;
-                            }
+                                if (!typeNames.TryGetValue(t.Name, out var result))
+                                {
+                                    return false;
+                                }
 
-                            sb.AppendType(result);
-                            return true;
+                                sb.AppendType(result, addNullable: false);
+                                return true;
+                            });
 
-                        });
                         sb.Append(' ');
                         sb.Append(name);
-                        sb.Append("Async(this ");
+                        sb.Append("Async");
+
+                        if (request.Type.IsGenericType)
+                        {
+                            var length = request.Type.TypeParameters.Length;
+
+                            sb.Append('<');
+                            for (var i = 0; i < length; i++)
+                            {
+                                var parameter = request.Type.TypeParameters[i];
+
+                                sb.Append(parameter.Name);
+
+                                if (i != length - 1)
+                                {
+                                    sb.Append(", ");
+                                }
+                            }
+                            sb.Append('>');
+                        }
+
+                        sb.Append("(this ");
                         sb.AppendType(type, false);
                         sb.Append(" sender, ");
                         sb.AppendParameterDefinitions(method.Parameters, t =>
@@ -240,8 +257,54 @@ public class SenderGenerator : IIncrementalGenerator
                         sb.AppendLine(")");
 
                         intentDepth++;
-                        AppendIntend();
 
+                        if (request.Type.IsGenericType)
+                        {
+                            var parameters = request.Type.TypeParameters
+                                .Where(i => i.ConstraintTypes.Length > 0 || i.HasReferenceTypeConstraint || i.HasValueTypeConstraint || i.HasUnmanagedTypeConstraint || i.HasConstructorConstraint)
+                                .ToArray();
+
+                            foreach (var parameter in parameters)
+                            {
+                                AppendIntend();
+                                sb.Append("where ");
+                                sb.Append(parameter.Name);
+                                sb.Append(" : ");
+
+                                int j;
+                                for (j = 0; j < parameter.ConstraintTypes.Length; j++)
+                                {
+                                    if (j > 1) sb.Append(", ");
+                                    sb.AppendType(parameter.ConstraintTypes[j], false);
+                                }
+
+                                if (parameter.HasReferenceTypeConstraint)
+                                {
+                                    if (j++ > 1) sb.Append(", ");
+                                    sb.Append("class");
+                                }
+                                else if (parameter.HasValueTypeConstraint)
+                                {
+                                    if (j++ > 1) sb.Append(", ");
+                                    sb.Append("struct");
+                                }
+                                else if (parameter.HasUnmanagedTypeConstraint)
+                                {
+                                    if (j++ > 1) sb.Append(", ");
+                                    sb.Append("unmanaged");
+                                }
+
+                                if (parameter.HasConstructorConstraint)
+                                {
+                                    if (j > 1) sb.Append(", ");
+                                    sb.Append("new()");
+                                }
+
+                                sb.AppendLine();
+                            }
+                        }
+
+                        AppendIntend();
                         sb.Append("=> sender.");
                         sb.Append(method.Name);
 

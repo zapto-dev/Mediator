@@ -51,4 +51,37 @@ public record struct Notification(string Argument, int OptionalArgument = 0) : I
 
         return TestHelper.Verify<SenderGenerator>(source);
     }
+
+    [Fact]
+    public Task GenerateGeneric()
+    {
+        const string source = @"
+using MediatR;
+
+public record Request<T>(T Argument) : IRequest<T>;";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
+
+    [Fact]
+    public Task GenerateGenericConstraint()
+    {
+        const string source = @"
+using MediatR;
+
+public record Request<T>(T Argument) : IRequest<T> where T : IRequest;";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
+
+    [Fact]
+    public Task GenerateGenericConstraintClass()
+    {
+        const string source = @"
+using MediatR;
+
+public record Request<T>(T Argument) : IRequest<T> where T : class;";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
 }

@@ -45,5 +45,5 @@ public class RequestBenchmark
     public async ValueTask<string> ZaptoNamespace() => await _mediator.PingAsync(Namespace);
 
     [Benchmark]
-    public async ValueTask<string> ZaptoGeneric() => await _mediator.Send<ReturnGeneric<string>, string>(new ReturnGeneric<string>("pong"));
+    public async ValueTask<string> ZaptoGeneric() => await _mediator.ReturnGenericAsync("pong");
 }
