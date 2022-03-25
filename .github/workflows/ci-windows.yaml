@@ -13,5 +13,5 @@ jobs:
         run: dotnet restore
       - name: Build
         run: dotnet build --configuration Release --no-restore
-      - name: Test
-        run: dotnet test --no-restore --verbosity normal --framework net461
+      - name: Test Mediator.DependencyInjection
+        run: dotnet test --no-restore --verbosity normal --framework net461 tests/Mediator.DependencyInjection.Tests/Mediator.DependencyInjection.Tests.csproj
