@@ -23,6 +23,7 @@ public class ScopedRequestBenchmark
         services.AddRequestHandler<Ping, string, PingHandlerZapto>();
         services.AddRequestHandler((PingDelegate _) => "pong");
         services.AddRequestHandler<Ping, string, PingHandlerZapto>(Namespace);
+        services.AddRequestHandler(typeof(ReturnGenericHandlerZapto<>));
 
         _provider = services.BuildServiceProvider();
     }
@@ -53,5 +54,12 @@ public class ScopedRequestBenchmark
     {
         await using var scope = _provider.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<Zapto.Mediator.IMediator>().PingAsync(Namespace);
+    }
+
+    [Benchmark]
+    public async ValueTask<string> ZaptoGeneric()
+    {
+        await using var scope = _provider.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<Zapto.Mediator.IMediator>().Send<ReturnGeneric<string>, string>(new ReturnGeneric<string>("pong"));
     }
 }

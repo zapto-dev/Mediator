@@ -105,6 +105,12 @@ public class SenderGenerator : IIncrementalGenerator
 
             var symbol = (INamedTypeSymbol) GetModel(syntaxNode).GetDeclaredSymbol(syntaxNode)!;
 
+            if (symbol.IsGenericType)
+            {
+                // TODO: Support generic types
+                continue;
+            }
+
             foreach (var current in symbol.AllInterfaces)
             {
                 if (methodsByType.TryGetValue((current.GetNamespace(), current.Name), out var results) &&
