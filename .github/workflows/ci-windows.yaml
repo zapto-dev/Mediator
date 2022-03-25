@@ -1,4 +1,4 @@
-name: dotnet package
+name: .NET Framework
 
 on: [push]
 
