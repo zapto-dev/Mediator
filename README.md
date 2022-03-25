@@ -17,25 +17,33 @@ Zapto.Mediator:
 ## Benchmark
 Note: [like MediatR](https://github.com/jbogard/MediatR.Extensions.Microsoft.DependencyInjection/blob/master/README.md), all handlers are registered as transient with the exception of delegate handlers.
 
+```
+BenchmarkDotNet=v0.13.1, OS=Windows 10.0.22000 (Windows 11)
+AMD Ryzen 9 5950X, 1 CPU, 32 logical and 16 physical cores
+.NET SDK=6.0.201
+  [Host]     : .NET 6.0.3 (6.0.322.12309), X64 RyuJIT
+  DefaultJob : .NET 6.0.3 (6.0.322.12309), X64 RyuJIT
+```
+
 ### Single scope
 This benchmark can be found in [benchmarks/Benchmarks/RequestBenchmark.cs](benchmarks/Benchmarks/RequestBenchmark.cs).
 
 |         Method |      Mean |    Error |   StdDev |  Gen 0 | Allocated |
 |--------------- |----------:|---------:|---------:|-------:|----------:|
-|        MediatR | 515.64 ns | 3.732 ns | 3.491 ns | 0.0849 |   1,424 B |
-|          Zapto |  51.68 ns | 0.142 ns | 0.126 ns | 0.0014 |      24 B |
-|  ZaptoDelegate |  52.74 ns | 0.189 ns | 0.177 ns |      - |         - |
-| ZaptoNamespace |  97.07 ns | 1.029 ns | 0.912 ns | 0.0086 |     144 B |
+|        MediatR | 502.52 ns | 2.057 ns | 1.824 ns | 0.0849 |   1,424 B |
+|          Zapto |  52.67 ns | 0.195 ns | 0.173 ns | 0.0014 |      24 B |
+|  ZaptoDelegate |  59.28 ns | 0.282 ns | 0.250 ns |      - |         - |
+| ZaptoNamespace | 101.53 ns | 0.174 ns | 0.154 ns | 0.0086 |     144 B |
 
 ### Scoped
 This benchmark can be found in [benchmarks/Benchmarks/ScopedRequestBenchmark.cs](benchmarks/Benchmarks/ScopedRequestBenchmark.cs).
 
 |         Method |     Mean |   Error |  StdDev |  Gen 0 | Allocated |
 |--------------- |---------:|--------:|--------:|-------:|----------:|
-|        MediatR | 623.7 ns | 2.24 ns | 1.98 ns | 0.0992 |   1,664 B |
-|          Zapto | 172.5 ns | 0.72 ns | 0.67 ns | 0.0200 |     336 B |
-|  ZaptoDelegate | 181.6 ns | 0.81 ns | 0.76 ns | 0.0186 |     312 B |
-| ZaptoNamespace | 221.1 ns | 0.62 ns | 0.58 ns | 0.0272 |     456 B |
+|        MediatR | 651.3 ns | 1.73 ns | 1.35 ns | 0.0992 |   1,664 B |
+|          Zapto | 141.2 ns | 2.74 ns | 2.56 ns | 0.0105 |     176 B |
+|  ZaptoDelegate | 137.0 ns | 0.56 ns | 0.49 ns | 0.0091 |     152 B |
+| ZaptoNamespace | 205.2 ns | 0.80 ns | 0.71 ns | 0.0176 |     296 B |
 
 ## Example
 ```csharp
