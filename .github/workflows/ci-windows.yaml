@@ -1,0 +1,17 @@
+name: .NET Framework
+
+on: [push]
+
+jobs:
+  test:
+
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      - name: Test Mediator.DependencyInjection
+        run: dotnet test --no-restore --verbosity normal --framework net461 tests/Mediator.DependencyInjection.Tests/Mediator.DependencyInjection.Tests.csproj

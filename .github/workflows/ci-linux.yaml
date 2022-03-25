@@ -1,0 +1,27 @@
+name: .NET
+
+on: [push]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        tfm: [ 'netcoreapp3.1', 'net5.0', 'net6.0' ]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: | 
+            3.1.x
+            5.0.x
+            6.0.x
+      - name: Install dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      - name: Test Mediator.DependencyInjection
+        run: dotnet test --no-restore --verbosity normal --framework ${{ matrix.tfm }} tests/Mediator.DependencyInjection.Tests/Mediator.DependencyInjection.Tests.csproj
