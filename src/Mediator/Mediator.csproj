@@ -4,7 +4,7 @@
         <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
         <LangVersion>10</LangVersion>
         <Nullable>enable</Nullable>
-        <RootNamespace>GerardSmit.Mediator</RootNamespace>
+        <RootNamespace>Zapto.Mediator</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
