@@ -19,6 +19,7 @@ jobs:
             3.1.x
             5.0.x
             6.0.x
+      - name: Install dependencies
         run: dotnet restore
       - name: Build
         run: dotnet build --configuration Release --no-restore
