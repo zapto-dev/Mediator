@@ -16,6 +16,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.DependencyInjectio
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.SourceGenerator.Tests", "tests\Mediator.SourceGenerator.Tests\Mediator.SourceGenerator.Tests.csproj", "{7E349EB1-EFDB-4B1D-A5AE-1DFC910B91F2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "benchmarks\Benchmarks.csproj", "{5D8C52CF-BCA7-4D8E-B8FA-EDF5AF73517F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Benchmarks", "Benchmarks", "{7A12E9E1-003C-438E-9512-99D60F12A2B1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,10 +50,15 @@ Global
 		{7E349EB1-EFDB-4B1D-A5AE-1DFC910B91F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7E349EB1-EFDB-4B1D-A5AE-1DFC910B91F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7E349EB1-EFDB-4B1D-A5AE-1DFC910B91F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D8C52CF-BCA7-4D8E-B8FA-EDF5AF73517F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D8C52CF-BCA7-4D8E-B8FA-EDF5AF73517F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D8C52CF-BCA7-4D8E-B8FA-EDF5AF73517F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D8C52CF-BCA7-4D8E-B8FA-EDF5AF73517F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{EADEB8F1-6E5A-47E4-AA62-BE74830DF401} = {AEBEC96C-2522-4A8F-B51E-726495AB068A}
 		{5EC95B13-5E23-4621-AA65-9B3B903804F2} = {CF8C5EAB-0615-42F0-A080-0D50EB594A01}
 		{7E349EB1-EFDB-4B1D-A5AE-1DFC910B91F2} = {CF8C5EAB-0615-42F0-A080-0D50EB594A01}
+		{5D8C52CF-BCA7-4D8E-B8FA-EDF5AF73517F} = {7A12E9E1-003C-438E-9512-99D60F12A2B1}
 	EndGlobalSection
 EndGlobal
