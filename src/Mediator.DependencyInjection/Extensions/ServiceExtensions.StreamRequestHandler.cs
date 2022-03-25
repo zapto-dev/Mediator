@@ -17,12 +17,12 @@ public static partial class ServiceExtensions
     {
         if (ns == null)
         {
-            services.AddScoped<IStreamRequestHandler<TRequest, TResponse>, THandler>();
+            services.AddTransient<IStreamRequestHandler<TRequest, TResponse>, THandler>();
         }
         else
         {
-            services.TryAddScoped<THandler>();
-            services.AddScoped<INamespaceStreamRequestHandler<TRequest, TResponse>>(p => new NamespaceStreamRequestHandlerProvider<TRequest, TResponse, THandler>(ns.Value, p));
+            services.TryAddTransient<THandler>();
+            services.AddSingleton<INamespaceStreamRequestHandler<TRequest, TResponse>>(p => new NamespaceStreamRequestHandlerProvider<TRequest, TResponse, THandler>(ns.Value, p));
         }
 
         return services;
@@ -65,7 +65,7 @@ public static partial class ServiceExtensions
     {
         if (ns == null)
         {
-            services.AddScoped<IStreamRequestHandler<TRequest, TResponse>>(p =>
+            services.AddSingleton<IStreamRequestHandler<TRequest, TResponse>>(p =>
                 new FuncStreamRequestHandler<TRequest, TResponse>(handler, p));
         }
         else

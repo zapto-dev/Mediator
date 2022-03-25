@@ -19,12 +19,12 @@ public static partial class ServiceExtensions
     {
         if (ns == null)
         {
-            services.AddScoped<INotificationHandler<TNotification>, THandler>();
+            services.AddTransient<INotificationHandler<TNotification>, THandler>();
         }
         else
         {
-            services.TryAddScoped<THandler>();
-            services.AddScoped<INamespaceNotificationHandler<TNotification>>(p => new NamespaceNotificationHandlerProvider<TNotification, THandler>(ns.Value, p));
+            services.TryAddTransient<THandler>();
+            services.AddSingleton<INamespaceNotificationHandler<TNotification>>(p => new NamespaceNotificationHandlerProvider<TNotification, THandler>(ns.Value, p));
         }
 
         return services;
@@ -58,12 +58,12 @@ public static partial class ServiceExtensions
     {
         if (ns == null)
         {
-            services.AddScoped<INotificationHandler<TNotification>>(p =>
+            services.AddSingleton<INotificationHandler<TNotification>>(p =>
                 new FuncNotificationHandler<TNotification>(handler, p));
         }
         else
         {
-            services.AddScoped<INamespaceNotificationHandler<TNotification>>(p =>
+            services.AddSingleton<INamespaceNotificationHandler<TNotification>>(p =>
                 new NamespaceNotificationHandler<TNotification>(ns.Value,
                     new FuncNotificationHandler<TNotification>(handler, p)));
         }

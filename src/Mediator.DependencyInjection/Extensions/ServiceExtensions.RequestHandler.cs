@@ -16,12 +16,12 @@ public static partial class ServiceExtensions
     {
         if (ns == null)
         {
-            services.AddScoped<IRequestHandler<TRequest, TResponse>, THandler>();
+            services.AddTransient<IRequestHandler<TRequest, TResponse>, THandler>();
         }
         else
         {
-            services.TryAddScoped<THandler>();
-            services.AddScoped<INamespaceRequestHandler<TRequest, TResponse>>(p => new NamespaceRequestHandlerProvider<TRequest, TResponse, THandler>(ns.Value, p));
+            services.TryAddTransient<THandler>();
+            services.AddSingleton<INamespaceRequestHandler<TRequest, TResponse>>(p => new NamespaceRequestHandlerProvider<TRequest, TResponse, THandler>(ns.Value, p));
         }
 
         return services;
@@ -64,7 +64,7 @@ public static partial class ServiceExtensions
     {
         if (ns == null)
         {
-            services.AddScoped<IRequestHandler<TRequest, TResponse>>(p =>
+            services.AddSingleton<IRequestHandler<TRequest, TResponse>>(p =>
                 new FuncRequestHandler<TRequest, TResponse>(handler, p));
         }
         else
