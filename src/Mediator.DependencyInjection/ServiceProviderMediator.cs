@@ -70,6 +70,10 @@ public class ServiceProviderMediator : IMediator
         {
             await handler.Handle(notification, cancellationToken);
         }
+
+        await _provider
+            .GetRequiredService<GenericNotificationHandler<TNotification>>()
+            .Handle(notification, cancellationToken);
     }
 
     /// <inheritdoc />

@@ -1,3 +1,4 @@
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Zapto.Mediator;
@@ -12,6 +13,9 @@ public static partial class ServiceExtensions
 
         services.AddSingleton<GenericRequestCache>();
         services.AddTransient(typeof(IRequestHandler<,>), typeof(GenericRequestHandler<,>));
+
+        services.AddSingleton<GenericNotificationCache>();
+        services.AddTransient(typeof(GenericNotificationHandler<>));
 
         return services;
     }

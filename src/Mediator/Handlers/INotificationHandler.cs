@@ -4,11 +4,15 @@ using MediatR;
 
 namespace Zapto.Mediator;
 
+public interface INotificationHandler
+{
+}
+
 /// <summary>
 /// Defines a handler for a notification
 /// </summary>
 /// <typeparam name="TNotification">The type of notification being handled</typeparam>
-public interface INotificationHandler<in TNotification>
+public interface INotificationHandler<in TNotification> : INotificationHandler
     where TNotification : INotification
 {
     /// <summary>
