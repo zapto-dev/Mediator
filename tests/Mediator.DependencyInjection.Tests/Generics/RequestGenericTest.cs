@@ -21,10 +21,13 @@ public class RequestGenericTest
             .GetRequiredService<IMediator>()
             .Send<ReturnGenericRequest<string>, string>(new ReturnGenericRequest<string>(expected));
 
-        Assert.Equal(
-            expected,
-            result
-        );
+        Assert.Equal(expected, result);
+
+        result = await provider
+            .GetRequiredService<IMediator>()
+            .Send<ReturnGenericRequest<string>, string>(new ReturnGenericRequest<string>(expected));
+
+        Assert.Equal(expected, result);
     }
 
     [Fact]
@@ -42,19 +45,13 @@ public class RequestGenericTest
             .GetRequiredService<IMediator>()
             .Send<ReturnGenericRequest<string>, string>(new ReturnGenericRequest<string>(expected));
 
-        Assert.Equal(
-            expected,
-            genericResult
-        );
+        Assert.Equal(expected, genericResult);
 
         var result = await provider
             .GetRequiredService<IMediator>()
             .Send<ReturnRequest, string>(new ReturnRequest(expected));
 
-        Assert.Equal(
-            expected,
-            result
-        );
+        Assert.Equal(expected, result);
     }
 
     [Fact]

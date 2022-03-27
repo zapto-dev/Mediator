@@ -22,8 +22,14 @@ public class NotificationGenericTest
 
         await provider
             .GetRequiredService<IMediator>()
-            .Publish(new GenericNotification<string>(expected));
+            .Publish(new GenericNotification<string?>(expected));
 
         Assert.Equal(expected, result.Object);
+
+        await provider
+            .GetRequiredService<IMediator>()
+            .Publish(new GenericNotification<string?>(null));
+
+        Assert.Null(result.Object);
     }
 }

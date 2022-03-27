@@ -60,12 +60,11 @@ internal sealed class GenericNotificationHandler<TNotification> : INotificationH
         }
 
         var arguments = notificationType.GetGenericArguments();
-
-        notificationType = notificationType.GetGenericTypeDefinition();
+        var genericType = notificationType.GetGenericTypeDefinition();
 
         foreach (var registration in _enumerable)
         {
-            if (registration.NotificationType != notificationType)
+            if (registration.NotificationType != genericType)
             {
                 continue;
             }

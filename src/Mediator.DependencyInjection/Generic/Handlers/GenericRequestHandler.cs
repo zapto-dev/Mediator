@@ -47,9 +47,9 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
     {
         var requestType = typeof(TRequest);
         var responseType = typeof(TResponse);
-        var key = (requestType, responseType);
+        var cacheKey = (requestType, responseType);
 
-        if (_cache.Handlers.TryGetValue(key, out var handlerType))
+        if (_cache.Handlers.TryGetValue(cacheKey, out var handlerType))
         {
             var handler = _serviceProvider.GetRequiredService(handlerType);
 
@@ -81,7 +81,7 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
             var type = registration.HandlerType.MakeGenericType(arguments);
             var handler = (IRequestHandler<TRequest, TResponse>) _serviceProvider.GetRequiredService(type);
 
-            _cache.Handlers.TryAdd(key, type);
+            _cache.Handlers.TryAdd(cacheKey, type);
 
             return await handler.Handle(request, ct);
         }
