@@ -9,43 +9,19 @@ Zapto.Mediator:
 1. Only supports `Microsoft.Extensions.DependencyInjection`.
 2. Requires you to specify types with `ISender.Send<TRequest, TResponse>(new TRequest())` to avoid boxing.  
    To make it easier you can use Zapto.Mediator.SourceGenerator to generate extension methods (e.g. `ISender.RequestAsync()`).
-3. Does **not** support pipelines or generics (this is on the roadmap).
+3. Does **not** support pipelines (yet).
 4. Allows you to use [C# 10 delegates](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-10.0/lambda-improvements).
 5. Allows you to use request namespaces (multiple request handlers under a different namespace).
 6. Uses `ValueTask` instead of `Task`.
+7. Generic support
 
 ## Benchmark
-Note: [like MediatR](https://github.com/jbogard/MediatR.Extensions.Microsoft.DependencyInjection/blob/master/README.md), all handlers are registered as transient with the exception of delegate handlers.
+For more details and more benchmarks, see [Benchmarks.md](Benchmarks.md).
 
-```
-BenchmarkDotNet=v0.13.1, OS=Windows 10.0.22000 (Windows 11)
-AMD Ryzen 9 5950X, 1 CPU, 32 logical and 16 physical cores
-.NET SDK=6.0.201
-  [Host]     : .NET 6.0.3 (6.0.322.12309), X64 RyuJIT
-  DefaultJob : .NET 6.0.3 (6.0.322.12309), X64 RyuJIT
-```
-
-### Single scope
-This benchmark can be found in [benchmarks/Benchmarks/RequestBenchmark.cs](benchmarks/Benchmarks/RequestBenchmark.cs).
-
-|         Method |      Mean |    Error |   StdDev |  Gen 0 | Allocated |
-|--------------- |----------:|---------:|---------:|-------:|----------:|
-|        MediatR | 496.78 ns | 2.602 ns | 2.434 ns | 0.0849 |   1,424 B |
-|          Zapto |  53.00 ns | 1.088 ns | 1.017 ns | 0.0014 |      24 B |
-|  ZaptoDelegate |  52.41 ns | 0.665 ns | 0.622 ns |      - |         - |
-| ZaptoNamespace | 102.57 ns | 1.729 ns | 1.617 ns | 0.0086 |     144 B |
-|   ZaptoGeneric | 146.75 ns | 2.673 ns | 2.500 ns | 0.0057 |      96 B |
-
-### Scoped
-This benchmark can be found in [benchmarks/Benchmarks/ScopedRequestBenchmark.cs](benchmarks/Benchmarks/ScopedRequestBenchmark.cs).
-
-|         Method |     Mean |    Error |   StdDev |  Gen 0 | Allocated |
-|--------------- |---------:|---------:|---------:|-------:|----------:|
-|        MediatR | 709.4 ns | 14.13 ns | 15.71 ns | 0.0992 |   1,664 B |
-|          Zapto | 140.1 ns |  1.14 ns |  0.95 ns | 0.0105 |     176 B |
-|  ZaptoDelegate | 138.9 ns |  1.40 ns |  1.31 ns | 0.0091 |     152 B |
-| ZaptoNamespace | 203.5 ns |  2.32 ns |  2.17 ns | 0.0176 |     296 B |
-|   ZaptoGeneric | 260.6 ns |  4.65 ns |  4.35 ns | 0.0148 |     248 B |
+|      Method |       Mean |     Error |    StdDev | Ratio | RatioSD |  Gen 0 | Allocated |
+|------------ |-----------:|----------:|----------:|------:|--------:|-------:|----------:|
+|     MediatR | 504.845 ns | 2.0148 ns | 1.7860 ns | 45.66 |    0.18 | 0.0849 |   1,424 B |
+|       Zapto |  35.229 ns | 0.1626 ns | 0.1441 ns |  3.18 |    0.02 | 0.0029 |      48 B |
 
 ## Example
 ```csharp
