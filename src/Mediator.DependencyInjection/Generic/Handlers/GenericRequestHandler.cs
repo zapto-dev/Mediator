@@ -58,7 +58,7 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
 
         if (!requestType.IsGenericType)
         {
-            throw new InvalidOperationException();
+            throw new InvalidCastException($"No handler found for request type {requestType.FullName}.");
         }
 
         var arguments = requestType.GetGenericArguments();
@@ -86,6 +86,6 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
             return await handler.Handle(request, ct);
         }
 
-        throw new InvalidOperationException();
+        throw new InvalidCastException($"No handler found for request type {requestType.FullName}.");
     }
 }

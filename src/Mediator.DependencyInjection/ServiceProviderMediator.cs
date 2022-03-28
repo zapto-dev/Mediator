@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Zapto.Mediator.Wrappers;
 
 namespace Zapto.Mediator;
 
@@ -15,6 +16,28 @@ public class ServiceProviderMediator : IMediator
     public ServiceProviderMediator(IServiceProvider provider)
     {
         _provider = provider;
+    }
+
+    /// <inheritdoc />
+    public ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    {
+        return RequestWrapper.Get<TResponse>(request.GetType()).Handle(request, cancellationToken, this);
+    }
+
+    public ValueTask<TResponse> Send<TResponse>(MediatorNamespace ns, IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    {
+        return RequestWrapper.Get<TResponse>(request.GetType()).Handle(ns, request, cancellationToken, this);
+    }
+
+    /// <inheritdoc />
+    public ValueTask<object?> Send(object request, CancellationToken cancellationToken = default)
+    {
+        return RequestWrapper.Get(request.GetType()).Handle(request, cancellationToken, this);
+    }
+
+    public ValueTask<object?> Send(MediatorNamespace ns, object request, CancellationToken cancellationToken = default)
+    {
+        return RequestWrapper.Get(request.GetType()).Handle(ns, request, cancellationToken, this);
     }
 
     /// <inheritdoc />
@@ -40,6 +63,29 @@ public class ServiceProviderMediator : IMediator
     }
 
     /// <inheritdoc />
+    public IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamRequest<TResponse> request, CancellationToken cancellationToken = default)
+    {
+        return StreamRequestWrapper.Get<TResponse>(request.GetType()).Handle(request, cancellationToken, this);
+    }
+
+    public IAsyncEnumerable<TResponse> CreateStream<TResponse>(MediatorNamespace ns, IStreamRequest<TResponse> request,
+        CancellationToken cancellationToken = default)
+    {
+        return StreamRequestWrapper.Get<TResponse>(request.GetType()).Handle(ns, request, cancellationToken, this);
+    }
+
+    /// <inheritdoc />
+    public IAsyncEnumerable<object?> CreateStream(object request, CancellationToken cancellationToken = default)
+    {
+        return StreamRequestWrapper.Get(request.GetType()).Handle(request, cancellationToken, this);
+    }
+
+    public IAsyncEnumerable<object?> CreateStream(MediatorNamespace ns, object request, CancellationToken cancellationToken = default)
+    {
+        return StreamRequestWrapper.Get(request.GetType()).Handle(ns, request, cancellationToken, this);
+    }
+
+    /// <inheritdoc />
     public IAsyncEnumerable<TResponse> CreateStream<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
         where TRequest : IStreamRequest<TResponse>
     {
@@ -60,6 +106,17 @@ public class ServiceProviderMediator : IMediator
         }
 
         return services.Handler.Handle(request, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public ValueTask Publish(object notification, CancellationToken cancellationToken = default)
+    {
+        return NotificationWrapper.Get(notification.GetType()).Handle(notification, cancellationToken, this);
+    }
+
+    public ValueTask Publish(MediatorNamespace ns, object notification, CancellationToken cancellationToken = default)
+    {
+        return NotificationWrapper.Get(notification.GetType()).Handle(ns, notification, cancellationToken, this);
     }
 
     /// <inheritdoc />

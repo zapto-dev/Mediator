@@ -3,7 +3,7 @@ using Zapto.Mediator;
 
 namespace Benchmarks.Handlers.Zapto;
 
-public class PingHandlerZapto : IRequestHandler<Ping, string>
+public sealed class PingHandlerZapto : IRequestHandler<Ping, string>
 {
     public ValueTask<string> Handle(Ping request, CancellationToken cancellationToken)
     {
