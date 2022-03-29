@@ -33,6 +33,40 @@ public class RequestTest
     }
 
     [Fact]
+    public async Task TestRequestInterface()
+    {
+        var handler = new Mock<IRequestHandler<Request, int>>();
+
+        var serviceProvider = new ServiceCollection()
+            .AddMediator()
+            .AddRequestHandler(handler.Object)
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        await mediator.Send(new Request());
+
+        handler.Verify(x => x.Handle(It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task TestRequestObject()
+    {
+        var handler = new Mock<IRequestHandler<Request, int>>();
+
+        var serviceProvider = new ServiceCollection()
+            .AddMediator()
+            .AddRequestHandler(handler.Object)
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        await mediator.Send((object)new Request());
+
+        handler.Verify(x => x.Handle(It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task TestNamespaceRequest()
     {
         var ns = new MediatorNamespace("test");
