@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 
@@ -18,9 +19,10 @@ public interface INotificationHandler<in TNotification> : INotificationHandler
     /// <summary>
     /// Handles a notification
     /// </summary>
+    /// <param name="provider">Current service provider</param>
     /// <param name="notification">The notification</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    ValueTask Handle(TNotification notification, CancellationToken cancellationToken);
+    ValueTask Handle(IServiceProvider provider, TNotification notification, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -30,15 +32,19 @@ public interface INotificationHandler<in TNotification> : INotificationHandler
 public abstract class NotificationHandler<TNotification> : INotificationHandler<TNotification>
     where TNotification : INotification
 {
-    ValueTask INotificationHandler<TNotification>.Handle(TNotification notification, CancellationToken cancellationToken)
+    ValueTask INotificationHandler<TNotification>.Handle(
+        IServiceProvider provider,
+        TNotification notification,
+        CancellationToken cancellationToken)
     {
-        Handle(notification);
+        Handle(provider, notification);
         return default;
     }
 
     /// <summary>
     /// Override in a derived class for the handler logic
     /// </summary>
+    /// <param name="provider">Current service provider</param>
     /// <param name="notification">Notification</param>
-    protected abstract void Handle(TNotification notification);
+    protected abstract void Handle(IServiceProvider provider, TNotification notification);
 }

@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Zapto.Mediator;
 
@@ -13,7 +14,8 @@ public class GenericNotificationHandler<T> : INotificationHandler<GenericNotific
         _result = result;
     }
 
-    public ValueTask Handle(GenericNotification<T> notification, CancellationToken cancellationToken)
+    public ValueTask Handle(IServiceProvider provider, GenericNotification<T> notification,
+        CancellationToken cancellationToken)
     {
         _result.Object = notification.Value;
         return default;

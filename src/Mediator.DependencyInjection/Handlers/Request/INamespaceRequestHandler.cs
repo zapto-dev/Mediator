@@ -1,9 +1,10 @@
-﻿using MediatR;
+﻿using System;
+using MediatR;
 
 namespace Zapto.Mediator;
 
 public interface INamespaceRequestHandler<in TRequest, TResponse> : INamespaceHandler
     where TRequest : IRequest<TResponse>
 {
-    IRequestHandler<TRequest, TResponse> Handler { get; }
+    IRequestHandler<TRequest, TResponse> GetHandler(IServiceProvider provider);
 }

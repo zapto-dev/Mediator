@@ -20,7 +20,7 @@ public class ServiceProviderMediator : IMediator
     /// <inheritdoc />
     public ValueTask<TResponse> Send<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default) where TRequest : IRequest<TResponse>
     {
-        return _provider.GetRequiredService<IRequestHandler<TRequest, TResponse>>().Handle(request, cancellationToken);
+        return _provider.GetRequiredService<IRequestHandler<TRequest, TResponse>>().Handle(_provider, request, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -36,14 +36,14 @@ public class ServiceProviderMediator : IMediator
             throw new InvalidOperationException();
         }
 
-        return services.Handler.Handle(request, cancellationToken);
+        return services.GetHandler(_provider).Handle(_provider, request, cancellationToken);
     }
 
     /// <inheritdoc />
     public IAsyncEnumerable<TResponse> CreateStream<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
         where TRequest : IStreamRequest<TResponse>
     {
-        return _provider.GetRequiredService<IStreamRequestHandler<TRequest, TResponse>>().Handle(request, cancellationToken);
+        return _provider.GetRequiredService<IStreamRequestHandler<TRequest, TResponse>>().Handle(_provider, request, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -59,7 +59,7 @@ public class ServiceProviderMediator : IMediator
             throw new InvalidOperationException();
         }
 
-        return services.Handler.Handle(request, cancellationToken);
+        return services.GetHandler(_provider).Handle(_provider, request, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -68,12 +68,12 @@ public class ServiceProviderMediator : IMediator
     {
         foreach (var handler in _provider.GetServices<INotificationHandler<TNotification>>())
         {
-            await handler.Handle(notification, cancellationToken);
+            await handler.Handle(_provider, notification, cancellationToken);
         }
 
         await _provider
             .GetRequiredService<GenericNotificationHandler<TNotification>>()
-            .Handle(notification, cancellationToken);
+            .Handle(_provider, notification, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -89,6 +89,6 @@ public class ServiceProviderMediator : IMediator
             throw new InvalidOperationException();
         }
 
-        return services.Handler.Handle(notification, cancellationToken);
+        return services.GetHandler(_provider).Handle(_provider, notification, cancellationToken);
     }
 }

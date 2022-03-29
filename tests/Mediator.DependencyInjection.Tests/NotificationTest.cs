@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Zapto.Mediator;
@@ -27,7 +28,7 @@ public class NotificationTest
 
         await mediator.Publish(new Notification());
 
-        handler.Verify(x => x.Handle(It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     [Fact]
@@ -47,6 +48,6 @@ public class NotificationTest
         await mediator.Publish(new Notification());
         await mediator.Publish(ns, new Notification());
 
-        handler.Verify(x => x.Handle(It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 }

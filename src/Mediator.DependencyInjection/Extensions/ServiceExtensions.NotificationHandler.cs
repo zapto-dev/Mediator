@@ -24,7 +24,7 @@ public static partial class ServiceExtensions
         else
         {
             services.TryAddTransient<THandler>();
-            services.AddSingleton<INamespaceNotificationHandler<TNotification>>(p => new NamespaceNotificationHandlerProvider<TNotification, THandler>(ns.Value, p));
+            services.AddSingleton<INamespaceNotificationHandler<TNotification>>(new NamespaceNotificationHandlerProvider<TNotification, THandler>(ns.Value));
         }
 
         return services;
@@ -58,14 +58,14 @@ public static partial class ServiceExtensions
     {
         if (ns == null)
         {
-            services.AddSingleton<INotificationHandler<TNotification>>(p =>
-                new FuncNotificationHandler<TNotification>(handler, p));
+            services.AddSingleton<INotificationHandler<TNotification>>(
+                new FuncNotificationHandler<TNotification>(handler));
         }
         else
         {
-            services.AddSingleton<INamespaceNotificationHandler<TNotification>>(p =>
+            services.AddSingleton<INamespaceNotificationHandler<TNotification>>(
                 new NamespaceNotificationHandler<TNotification>(ns.Value,
-                    new FuncNotificationHandler<TNotification>(handler, p)));
+                    new FuncNotificationHandler<TNotification>(handler)));
         }
 
         return services;

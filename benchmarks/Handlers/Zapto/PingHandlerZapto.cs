@@ -5,7 +5,7 @@ namespace Benchmarks.Handlers.Zapto;
 
 public class PingHandlerZapto : IRequestHandler<Ping, string>
 {
-    public ValueTask<string> Handle(Ping request, CancellationToken cancellationToken)
+    public ValueTask<string> Handle(IServiceProvider provider, Ping request, CancellationToken cancellationToken)
     {
         return new ValueTask<string>("Pong");
     }

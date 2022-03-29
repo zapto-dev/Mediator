@@ -29,7 +29,7 @@ public class RequestTest
 
         await mediator.Send<Request, int>(new Request());
 
-        handler.Verify(x => x.Handle(It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
+        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -49,6 +49,6 @@ public class RequestTest
         await mediator.Send<Request, int>(new Request());
         await mediator.Send<Request, int>(ns, new Request());
 
-        handler.Verify(x => x.Handle(It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 }

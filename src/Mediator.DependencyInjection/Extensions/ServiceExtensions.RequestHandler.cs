@@ -21,7 +21,7 @@ public static partial class ServiceExtensions
         else
         {
             services.TryAddTransient<THandler>();
-            services.AddSingleton<INamespaceRequestHandler<TRequest, TResponse>>(p => new NamespaceRequestHandlerProvider<TRequest, TResponse, THandler>(ns.Value, p));
+            services.AddSingleton<INamespaceRequestHandler<TRequest, TResponse>>(new NamespaceRequestHandlerProvider<TRequest, TResponse, THandler>(ns.Value));
         }
 
         return services;
@@ -64,14 +64,14 @@ public static partial class ServiceExtensions
     {
         if (ns == null)
         {
-            services.AddSingleton<IRequestHandler<TRequest, TResponse>>(p =>
-                new FuncRequestHandler<TRequest, TResponse>(handler, p));
+            services.AddSingleton<IRequestHandler<TRequest, TResponse>>(
+                new FuncRequestHandler<TRequest, TResponse>(handler));
         }
         else
         {
-            services.AddSingleton<INamespaceRequestHandler<TRequest, TResponse>>(p =>
+            services.AddSingleton<INamespaceRequestHandler<TRequest, TResponse>>(
                 new NamespaceRequestHandler<TRequest, TResponse>(ns.Value,
-                    new FuncRequestHandler<TRequest, TResponse>(handler, p)));
+                    new FuncRequestHandler<TRequest, TResponse>(handler)));
         }
 
         return services;
