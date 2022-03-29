@@ -58,7 +58,7 @@ IRequestHandler<Request, string> handler = new RequestHandler();
 var response = await handler.Handle(new Request("parameter"), CancellationToken.None);
 ```
 
-### Generic
+### Generic request parameter
 With Zapto, it's possible to send a request with the request and response types. This can be used to avoid boxing, especially when using structs.
 [MediatR has a pull request open](https://github.com/jbogard/MediatR/pull/673) to implement this feature, but it hasn't been merged because it's ugly to specify all arguments. If you use atleast C# 9, it's possible to use the source generator to automaticly generate extension methods.
 
