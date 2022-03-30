@@ -43,7 +43,7 @@ public class ServiceProviderMediator : IMediator
     /// <inheritdoc />
     public ValueTask<TResponse> Send<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default) where TRequest : IRequest<TResponse>
     {
-        return _provider.GetRequiredService<IRequestHandler<TRequest, TResponse>>().Handle(request, cancellationToken);
+        return _provider.GetRequiredService<IRequestHandler<TRequest, TResponse>>().Handle(_provider, request, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -59,7 +59,30 @@ public class ServiceProviderMediator : IMediator
             throw new InvalidOperationException();
         }
 
-        return services.Handler.Handle(request, cancellationToken);
+        return services.GetHandler(_provider).Handle(_provider, request, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamRequest<TResponse> request, CancellationToken cancellationToken = default)
+    {
+        return StreamRequestWrapper.Get<TResponse>(request.GetType()).Handle(request, cancellationToken, this);
+    }
+
+    public IAsyncEnumerable<TResponse> CreateStream<TResponse>(MediatorNamespace ns, IStreamRequest<TResponse> request,
+        CancellationToken cancellationToken = default)
+    {
+        return StreamRequestWrapper.Get<TResponse>(request.GetType()).Handle(ns, request, cancellationToken, this);
+    }
+
+    /// <inheritdoc />
+    public IAsyncEnumerable<object?> CreateStream(object request, CancellationToken cancellationToken = default)
+    {
+        return StreamRequestWrapper.Get(request.GetType()).Handle(request, cancellationToken, this);
+    }
+
+    public IAsyncEnumerable<object?> CreateStream(MediatorNamespace ns, object request, CancellationToken cancellationToken = default)
+    {
+        return StreamRequestWrapper.Get(request.GetType()).Handle(ns, request, cancellationToken, this);
     }
 
     /// <inheritdoc />
@@ -89,7 +112,7 @@ public class ServiceProviderMediator : IMediator
     public IAsyncEnumerable<TResponse> CreateStream<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
         where TRequest : IStreamRequest<TResponse>
     {
-        return _provider.GetRequiredService<IStreamRequestHandler<TRequest, TResponse>>().Handle(request, cancellationToken);
+        return _provider.GetRequiredService<IStreamRequestHandler<TRequest, TResponse>>().Handle(_provider, request, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -105,7 +128,18 @@ public class ServiceProviderMediator : IMediator
             throw new InvalidOperationException();
         }
 
-        return services.Handler.Handle(request, cancellationToken);
+        return services.GetHandler(_provider).Handle(_provider, request, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public ValueTask Publish(object notification, CancellationToken cancellationToken = default)
+    {
+        return NotificationWrapper.Get(notification.GetType()).Handle(notification, cancellationToken, this);
+    }
+
+    public ValueTask Publish(MediatorNamespace ns, object notification, CancellationToken cancellationToken = default)
+    {
+        return NotificationWrapper.Get(notification.GetType()).Handle(ns, notification, cancellationToken, this);
     }
 
     /// <inheritdoc />
@@ -125,12 +159,12 @@ public class ServiceProviderMediator : IMediator
     {
         foreach (var handler in _provider.GetServices<INotificationHandler<TNotification>>())
         {
-            await handler.Handle(notification, cancellationToken);
+            await handler.Handle(_provider, notification, cancellationToken);
         }
 
         await _provider
             .GetRequiredService<GenericNotificationHandler<TNotification>>()
-            .Handle(notification, cancellationToken);
+            .Handle(_provider, notification, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -146,6 +180,6 @@ public class ServiceProviderMediator : IMediator
             throw new InvalidOperationException();
         }
 
-        return services.Handler.Handle(notification, cancellationToken);
+        return services.GetHandler(_provider).Handle(_provider, notification, cancellationToken);
     }
 }

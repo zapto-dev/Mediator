@@ -22,7 +22,7 @@ public static partial class ServiceExtensions
         else
         {
             services.TryAddTransient<THandler>();
-            services.AddSingleton<INamespaceStreamRequestHandler<TRequest, TResponse>>(p => new NamespaceStreamRequestHandlerProvider<TRequest, TResponse, THandler>(ns.Value, p));
+            services.AddSingleton<INamespaceStreamRequestHandler<TRequest, TResponse>>(new NamespaceStreamRequestHandlerProvider<TRequest, TResponse, THandler>(ns.Value));
         }
 
         return services;
@@ -65,14 +65,14 @@ public static partial class ServiceExtensions
     {
         if (ns == null)
         {
-            services.AddSingleton<IStreamRequestHandler<TRequest, TResponse>>(p =>
-                new FuncStreamRequestHandler<TRequest, TResponse>(handler, p));
+            services.AddSingleton<IStreamRequestHandler<TRequest, TResponse>>(
+                new FuncStreamRequestHandler<TRequest, TResponse>(handler));
         }
         else
         {
-            services.AddSingleton<INamespaceStreamRequestHandler<TRequest, TResponse>>(p =>
+            services.AddSingleton<INamespaceStreamRequestHandler<TRequest, TResponse>>(
                 new NamespaceStreamRequestHandler<TRequest, TResponse>(ns.Value,
-                    new FuncStreamRequestHandler<TRequest, TResponse>(handler, p)));
+                    new FuncStreamRequestHandler<TRequest, TResponse>(handler)));
         }
 
         return services;

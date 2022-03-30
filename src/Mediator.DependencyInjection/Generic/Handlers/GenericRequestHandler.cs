@@ -43,7 +43,7 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
         _cache = cache;
     }
 
-    public async ValueTask<TResponse> Handle(TRequest request, CancellationToken ct)
+    public async ValueTask<TResponse> Handle(IServiceProvider provider, TRequest request, CancellationToken ct)
     {
         var requestType = typeof(TRequest);
         var responseType = typeof(TResponse);
@@ -53,7 +53,7 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
         {
             var handler = _serviceProvider.GetRequiredService(handlerType);
 
-            return await ((IRequestHandler<TRequest, TResponse>)handler).Handle(request, ct);
+            return await ((IRequestHandler<TRequest, TResponse>)handler).Handle(provider, request, ct);
         }
 
         if (!requestType.IsGenericType)
@@ -83,7 +83,7 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
 
             _cache.Handlers.TryAdd(cacheKey, type);
 
-            return await handler.Handle(request, ct);
+            return await handler.Handle(provider, request, ct);
         }
 
         throw new InvalidCastException($"No handler found for request type {requestType.FullName}.");

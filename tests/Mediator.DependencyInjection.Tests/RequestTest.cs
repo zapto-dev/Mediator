@@ -29,7 +29,41 @@ public class RequestTest
 
         await mediator.Send<Request, int>(new Request());
 
-        handler.Verify(x => x.Handle(It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
+        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task TestRequestInterface()
+    {
+        var handler = new Mock<IRequestHandler<Request, int>>();
+
+        var serviceProvider = new ServiceCollection()
+            .AddMediator()
+            .AddRequestHandler(handler.Object)
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        await mediator.Send(new Request());
+
+        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task TestRequestObject()
+    {
+        var handler = new Mock<IRequestHandler<Request, int>>();
+
+        var serviceProvider = new ServiceCollection()
+            .AddMediator()
+            .AddRequestHandler(handler.Object)
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        await mediator.Send((object)new Request());
+
+        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -83,6 +117,6 @@ public class RequestTest
         await mediator.Send<Request, int>(new Request());
         await mediator.Send<Request, int>(ns, new Request());
 
-        handler.Verify(x => x.Handle(It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 }

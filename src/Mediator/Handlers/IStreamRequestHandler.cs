@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using MediatR;
 
@@ -15,8 +16,9 @@ public interface IStreamRequestHandler<in TRequest, out TResponse>
     /// <summary>
     /// Handles a stream request with IAsyncEnumerable as return type.
     /// </summary>
+    /// <param name="provider">Current service provider</param>
     /// <param name="request">The request</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Response from the request</returns>
-    IAsyncEnumerable<TResponse> Handle(TRequest request, CancellationToken cancellationToken);
+    IAsyncEnumerable<TResponse> Handle(IServiceProvider provider, TRequest request, CancellationToken cancellationToken);
 }

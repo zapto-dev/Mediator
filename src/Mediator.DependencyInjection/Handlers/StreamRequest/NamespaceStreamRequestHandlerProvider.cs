@@ -6,19 +6,16 @@ namespace Zapto.Mediator;
 
 internal class NamespaceStreamRequestHandlerProvider<TRequest, TResponse, THandler> : INamespaceStreamRequestHandler<TRequest, TResponse>
     where TRequest : IStreamRequest<TResponse>
-    where THandler : IStreamRequestHandler<TRequest, TResponse>
+    where THandler : class, IStreamRequestHandler<TRequest, TResponse>
 {
-    private readonly IServiceProvider _serviceProvider;
 
-    public NamespaceStreamRequestHandlerProvider(MediatorNamespace ns, IServiceProvider serviceProvider)
+    public NamespaceStreamRequestHandlerProvider(MediatorNamespace ns)
     {
-        _serviceProvider = serviceProvider;
         Namespace = ns;
     }
 
     public MediatorNamespace Namespace { get; }
 
-    public THandler Handler => _serviceProvider.GetRequiredService<THandler>();
-
-    IStreamRequestHandler<TRequest, TResponse> INamespaceStreamRequestHandler<TRequest, TResponse>.Handler => Handler;
+    public IStreamRequestHandler<TRequest, TResponse> GetHandler(IServiceProvider provider)
+        => provider.GetRequiredService<THandler>();
 }

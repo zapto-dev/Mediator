@@ -20,10 +20,11 @@ public interface IRequestHandler<in TRequest, TResponse> : IRequestHandler
     /// <summary>
     /// Handles a request
     /// </summary>
+    /// <param name="provider">Current service provider</param>
     /// <param name="request">The request</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Response from the request</returns>
-    ValueTask<TResponse> Handle(TRequest request, CancellationToken cancellationToken);
+    ValueTask<TResponse> Handle(IServiceProvider provider, TRequest request, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -43,19 +44,20 @@ public interface IRequestHandler<in TRequest> : IRequestHandler<TRequest, Unit>
 public abstract class AsyncRequestHandler<TRequest> : IRequestHandler<TRequest>
     where TRequest : IRequest
 {
-    async ValueTask<Unit> IRequestHandler<TRequest, Unit>.Handle(TRequest request, CancellationToken cancellationToken)
+    async ValueTask<Unit> IRequestHandler<TRequest, Unit>.Handle(IServiceProvider provider, TRequest request, CancellationToken cancellationToken)
     {
-        await Handle(request, cancellationToken).ConfigureAwait(false);
+        await Handle(provider, request, cancellationToken).ConfigureAwait(false);
         return Unit.Value;
     }
 
     /// <summary>
     /// Override in a derived class for the handler logic
     /// </summary>
+    /// <param name="provider">Current service provider</param>
     /// <param name="request">Request</param>
     /// <param name="cancellationToken"></param>
     /// <returns>Response</returns>
-    protected abstract Task Handle(TRequest request, CancellationToken cancellationToken);
+    protected abstract Task Handle(IServiceProvider serviceProvider, TRequest request, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -66,15 +68,17 @@ public abstract class AsyncRequestHandler<TRequest> : IRequestHandler<TRequest>
 public abstract class RequestHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
-    ValueTask<TResponse> IRequestHandler<TRequest, TResponse>.Handle(TRequest request, CancellationToken cancellationToken)
-        => new(Handle(request));
+    ValueTask<TResponse> IRequestHandler<TRequest, TResponse>.Handle(IServiceProvider provider, TRequest request,
+        CancellationToken cancellationToken)
+        => new(Handle(provider, request));
 
     /// <summary>
     /// Override in a derived class for the handler logic
     /// </summary>
+    /// <param name="provider">Current service provider</param>
     /// <param name="request">Request</param>
     /// <returns>Response</returns>
-    protected abstract TResponse Handle(TRequest request);
+    protected abstract TResponse Handle(IServiceProvider provider, TRequest request);
 }
 
 /// <summary>
@@ -84,11 +88,12 @@ public abstract class RequestHandler<TRequest, TResponse> : IRequestHandler<TReq
 public abstract class RequestHandler<TRequest> : IRequestHandler<TRequest>
     where TRequest : IRequest
 {
-    ValueTask<Unit> IRequestHandler<TRequest, Unit>.Handle(TRequest request, CancellationToken cancellationToken)
+    ValueTask<Unit> IRequestHandler<TRequest, Unit>.Handle(IServiceProvider provider, TRequest request,
+        CancellationToken cancellationToken)
     {
-        Handle(request);
+        Handle(provider, request);
         return default;
     }
 
-    protected abstract void Handle(TRequest request);
+    protected abstract void Handle(IServiceProvider provider, TRequest request);
 }

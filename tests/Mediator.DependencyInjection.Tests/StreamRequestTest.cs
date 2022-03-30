@@ -20,7 +20,7 @@ public class StreamRequestTest
     {
         var handler = new Mock<IStreamRequestHandler<StreamRequest, int>>();
 
-        handler.Setup(h => h.Handle(It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()))
+        handler.Setup(h => h.Handle(It.IsAny<IServiceProvider>(), It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()))
             .Returns(Array.Empty<int>().ToAsyncEnumerable());
 
         var serviceProvider = new ServiceCollection()
@@ -32,6 +32,50 @@ public class StreamRequestTest
 
         await mediator
             .CreateStream<StreamRequest, int>(new StreamRequest())
+            .ToListAsync();
+
+        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task TestStreamInterface()
+    {
+        var handler = new Mock<IStreamRequestHandler<StreamRequest, int>>();
+
+        handler.Setup(h => h.Handle(It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(Array.Empty<int>().ToAsyncEnumerable());
+
+        var serviceProvider = new ServiceCollection()
+            .AddMediator()
+            .AddStreamRequestHandler(handler.Object)
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        await mediator
+            .CreateStream(new StreamRequest())
+            .ToListAsync();
+
+        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task TestStreamObject()
+    {
+        var handler = new Mock<IStreamRequestHandler<StreamRequest, int>>();
+
+        handler.Setup(h => h.Handle(It.IsAny<IServiceProvider>(), It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(Array.Empty<int>().ToAsyncEnumerable());
+
+        var serviceProvider = new ServiceCollection()
+            .AddMediator()
+            .AddStreamRequestHandler(handler.Object)
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        await mediator
+            .CreateStream((object) new StreamRequest())
             .ToListAsync();
 
         handler.Verify(x => x.Handle(It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -87,7 +131,7 @@ public class StreamRequestTest
         var ns = new MediatorNamespace("test");
         var handler = new Mock<IStreamRequestHandler<StreamRequest, int>>();
 
-        handler.Setup(h => h.Handle(It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()))
+        handler.Setup(h => h.Handle(It.IsAny<IServiceProvider>(), It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()))
             .Returns(Array.Empty<int>().ToAsyncEnumerable());
 
         var serviceProvider = new ServiceCollection()
@@ -106,6 +150,6 @@ public class StreamRequestTest
             .CreateStream<StreamRequest, int>(ns, new StreamRequest())
             .ToListAsync();
 
-        handler.Verify(x => x.Handle(It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<StreamRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 }

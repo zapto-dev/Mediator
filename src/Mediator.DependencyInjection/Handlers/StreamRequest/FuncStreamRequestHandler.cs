@@ -9,17 +9,15 @@ namespace Zapto.Mediator;
 internal class FuncStreamRequestHandler<TRequest, TResponse> : IStreamRequestHandler<TRequest, TResponse>
     where TRequest : IStreamRequest<TResponse>
 {
-    private readonly IServiceProvider _serviceProvider;
     private readonly Func<IServiceProvider, TRequest, IAsyncEnumerable<TResponse>> _func;
 
-    public FuncStreamRequestHandler(Func<IServiceProvider, TRequest, IAsyncEnumerable<TResponse>> func, IServiceProvider serviceProvider)
+    public FuncStreamRequestHandler(Func<IServiceProvider, TRequest, IAsyncEnumerable<TResponse>> func)
     {
         _func = func;
-        _serviceProvider = serviceProvider;
     }
 
-    public IAsyncEnumerable<TResponse> Handle(TRequest request, CancellationToken cancellationToken)
+    public IAsyncEnumerable<TResponse> Handle(IServiceProvider provider, TRequest request, CancellationToken cancellationToken)
     {
-        return _func(_serviceProvider, request);
+        return _func(provider, request);
     }
 }

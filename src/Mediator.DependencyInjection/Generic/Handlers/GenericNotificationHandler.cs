@@ -40,7 +40,7 @@ internal sealed class GenericNotificationHandler<TNotification> : INotificationH
         _cache = cache;
     }
 
-    public async ValueTask Handle(TNotification notification, CancellationToken ct)
+    public async ValueTask Handle(IServiceProvider provider, TNotification notification, CancellationToken ct)
     {
         var notificationType = typeof(TNotification);
 
@@ -53,7 +53,7 @@ internal sealed class GenericNotificationHandler<TNotification> : INotificationH
         {
             foreach (var handler in _serviceProvider.GetServices(handlerType))
             {
-                await ((INotificationHandler<TNotification>)handler!).Handle(notification, ct);
+                await ((INotificationHandler<TNotification>)handler!).Handle(provider, notification, ct);
             }
 
             return;
@@ -75,7 +75,7 @@ internal sealed class GenericNotificationHandler<TNotification> : INotificationH
 
             foreach (var handler in _serviceProvider.GetServices(type))
             {
-                await ((INotificationHandler<TNotification>)handler!).Handle(notification, ct);
+                await ((INotificationHandler<TNotification>)handler!).Handle(provider, notification, ct);
             }
 
             break;
