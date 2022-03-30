@@ -62,22 +62,10 @@ public class ServiceProviderMediator : IMediator
         return services.GetHandler(_provider).Handle(_provider, request, cancellationToken);
     }
 
-    /// <inheritdoc />
-    public IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamRequest<TResponse> request, CancellationToken cancellationToken = default)
-    {
-        return StreamRequestWrapper.Get<TResponse>(request.GetType()).Handle(request, cancellationToken, this);
-    }
-
     public IAsyncEnumerable<TResponse> CreateStream<TResponse>(MediatorNamespace ns, IStreamRequest<TResponse> request,
         CancellationToken cancellationToken = default)
     {
         return StreamRequestWrapper.Get<TResponse>(request.GetType()).Handle(ns, request, cancellationToken, this);
-    }
-
-    /// <inheritdoc />
-    public IAsyncEnumerable<object?> CreateStream(object request, CancellationToken cancellationToken = default)
-    {
-        return StreamRequestWrapper.Get(request.GetType()).Handle(request, cancellationToken, this);
     }
 
     public IAsyncEnumerable<object?> CreateStream(MediatorNamespace ns, object request, CancellationToken cancellationToken = default)
@@ -91,21 +79,10 @@ public class ServiceProviderMediator : IMediator
         return StreamRequestWrapper.Get<TResponse>(request.GetType()).Handle(request, cancellationToken, this);
     }
 
-    public IAsyncEnumerable<TResponse> CreateStream<TResponse>(MediatorNamespace ns, IStreamRequest<TResponse> request,
-        CancellationToken cancellationToken = default)
-    {
-        return StreamRequestWrapper.Get<TResponse>(request.GetType()).Handle(ns, request, cancellationToken, this);
-    }
-
     /// <inheritdoc />
     public IAsyncEnumerable<object?> CreateStream(object request, CancellationToken cancellationToken = default)
     {
         return StreamRequestWrapper.Get(request.GetType()).Handle(request, cancellationToken, this);
-    }
-
-    public IAsyncEnumerable<object?> CreateStream(MediatorNamespace ns, object request, CancellationToken cancellationToken = default)
-    {
-        return StreamRequestWrapper.Get(request.GetType()).Handle(ns, request, cancellationToken, this);
     }
 
     /// <inheritdoc />
@@ -129,17 +106,6 @@ public class ServiceProviderMediator : IMediator
         }
 
         return services.GetHandler(_provider).Handle(_provider, request, cancellationToken);
-    }
-
-    /// <inheritdoc />
-    public ValueTask Publish(object notification, CancellationToken cancellationToken = default)
-    {
-        return NotificationWrapper.Get(notification.GetType()).Handle(notification, cancellationToken, this);
-    }
-
-    public ValueTask Publish(MediatorNamespace ns, object notification, CancellationToken cancellationToken = default)
-    {
-        return NotificationWrapper.Get(notification.GetType()).Handle(ns, notification, cancellationToken, this);
     }
 
     /// <inheritdoc />

@@ -15,6 +15,7 @@ public class RequestBenchmark
     private readonly Zapto.Mediator.IMediator _mediator;
     private readonly PingHandlerZapto _handler;
     private readonly Zapto.Mediator.IRequestHandler<Ping, string> _handlerInterface;
+    private readonly ServiceProvider _provider;
 
     public RequestBenchmark()
     {
@@ -27,6 +28,7 @@ public class RequestBenchmark
 
         var provider = services.BuildServiceProvider();
 
+        _provider = provider;
         _handler = new PingHandlerZapto();
         _handlerInterface = new PingHandlerZapto();
         _mediatR = provider.GetRequiredService<MediatR.IMediator>();
@@ -34,10 +36,10 @@ public class RequestBenchmark
     }
 
     [Benchmark(Baseline = true)]
-    public ValueTask<string> Handler_AsInterface() => _handlerInterface.Handle(new Ping(), CancellationToken.None);
+    public ValueTask<string> Handler_AsInterface() => _handlerInterface.Handle(_provider, new Ping(), CancellationToken.None);
 
     [Benchmark]
-    public ValueTask<string> Handler_AsClass() => _handler.Handle(new Ping(), CancellationToken.None);
+    public ValueTask<string> Handler_AsClass() => _handler.Handle(_provider, new Ping(), CancellationToken.None);
 
     [Benchmark]
     public Task<string> MediatR_Interface() => _mediatR.Send(new Ping());

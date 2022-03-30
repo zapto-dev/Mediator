@@ -5,5 +5,6 @@ namespace Benchmarks.Handlers.Zapto;
 
 public class ReturnStructGenericHandlerZapto<T> : IRequestHandler<ReturnStructGeneric<T>, T>
 {
-    public ValueTask<T> Handle(ReturnStructGeneric<T> request, CancellationToken cancellationToken) => new(request.Value);
+    public ValueTask<T> Handle(IServiceProvider provider, ReturnStructGeneric<T> request, CancellationToken cancellationToken)
+        => new(request.Value);
 }

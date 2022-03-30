@@ -50,24 +50,6 @@ public class NotificationTest
     }
 
     [Fact]
-    public async Task TestNotificationObject()
-    {
-        var handler = new Mock<INotificationHandler<Notification>>();
-
-        var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddNotificationHandler(handler.Object)
-            .AddNotificationHandler(handler.Object)
-            .BuildServiceProvider();
-
-        var mediator = serviceProvider.GetRequiredService<IMediator>();
-
-        await mediator.Publish((object) new Notification());
-
-        handler.Verify(x => x.Handle(It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-    }
-
-    [Fact]
     public async Task TestNamespaceNotification()
     {
         var ns = new MediatorNamespace("test");

@@ -15,6 +15,7 @@ public class StructRequestBenchmark
     private readonly Zapto.Mediator.IMediator _mediator;
     private readonly PingStructHandlerZapto _handler;
     private readonly Zapto.Mediator.IRequestHandler<PingStruct, string> _handlerInterface;
+    private readonly ServiceProvider _provider;
 
     public StructRequestBenchmark()
     {
@@ -27,6 +28,7 @@ public class StructRequestBenchmark
 
         var provider = services.BuildServiceProvider();
 
+        _provider = provider;
         _handler = new PingStructHandlerZapto();
         _handlerInterface = new PingStructHandlerZapto();
         _mediatR = provider.GetRequiredService<MediatR.IMediator>();
@@ -34,10 +36,10 @@ public class StructRequestBenchmark
     }
 
     [Benchmark(Baseline = true)]
-    public ValueTask<string> Handler_AsInterface() => _handlerInterface.Handle(new PingStruct(), CancellationToken.None);
+    public ValueTask<string> Handler_AsInterface() => _handlerInterface.Handle(_provider, new PingStruct(), CancellationToken.None);
 
     [Benchmark]
-    public ValueTask<string> Handler_AsClass() => _handler.Handle(new PingStruct(), CancellationToken.None);
+    public ValueTask<string> Handler_AsClass() => _handler.Handle(_provider, new PingStruct(), CancellationToken.None);
 
     [Benchmark]
     public Task<string> MediatR_Interface() => _mediatR.Send(new PingStruct());
