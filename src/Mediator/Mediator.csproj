@@ -2,9 +2,10 @@
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+        <AssemblyName>Zapto.Mediator</AssemblyName>
+        <RootNamespace>Zapto.Mediator</RootNamespace>
         <LangVersion>10</LangVersion>
         <Nullable>enable</Nullable>
-        <RootNamespace>Zapto.Mediator</RootNamespace>
     </PropertyGroup>
 
     <PropertyGroup>
