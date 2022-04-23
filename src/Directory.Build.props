@@ -1,0 +1,14 @@
+<Project>
+
+    <PropertyGroup>
+        <Version>1.0.0-beta.5</Version>
+        <PackageVersion>1.0.0-beta.5</PackageVersion>
+        <Authors>Zapto</Authors>
+        <RepositoryUrl>https://github.com/zapto-dev/Mediator</RepositoryUrl>
+        <Copyright>Copyright © 2022 Zapto</Copyright>
+        <PackageTags>zapto, mediator</PackageTags>
+        <PackageProjectUrl>https://github.com/zapto-dev/Mediator</PackageProjectUrl>
+        <PackageLicenseUrl>https://github.com/zapto-dev/Mediator/blob/main/LICENSE</PackageLicenseUrl>
+    </PropertyGroup>
+
+</Project>

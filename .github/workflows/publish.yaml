@@ -1,0 +1,57 @@
+name: .NET
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: | 
+            3.1.x
+            5.0.x
+            6.0.x
+      - name: Install dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      - name: Test Mediator.SourceGenerator
+        run: dotnet test --no-restore --verbosity normal tests/Mediator.SourceGenerator.Tests/Mediator.SourceGenerator.Tests.csproj
+      - name: Publish Mediator
+        uses: brandedoutcast/publish-nuget@v2.5.5
+        with:
+          VERSION_FILE_PATH: src/Directory.Build.props
+          PROJECT_FILE_PATH: src/Mediator/Mediator.csproj
+          NUGET_KEY: ${{secrets.NUGET_API_KEY}}
+      - name: Publish Mediator.DependencyInjection
+        uses: brandedoutcast/publish-nuget@v2.5.5
+        with:
+          VERSION_FILE_PATH: src/Directory.Build.props
+          PROJECT_FILE_PATH: src/Mediator.DependencyInjection/Mediator.DependencyInjection.csproj
+          NUGET_KEY: ${{secrets.NUGET_API_KEY}}
+      - name: Publish Mediator.SourceGenerator
+        uses: brandedoutcast/publish-nuget@v2.5.5
+        with:
+          VERSION_FILE_PATH: src/Directory.Build.props
+          PROJECT_FILE_PATH: src/Mediator.SourceGenerator/Mediator.SourceGenerator.csproj
+          NUGET_KEY: ${{secrets.NUGET_API_KEY}}
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore
+    - name: Test
+      run: dotnet test Tests/Tests.csproj --no-build --logger "console;verbosity=detailed" /p:AltCover=true
