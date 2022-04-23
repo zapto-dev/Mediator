@@ -42,16 +42,3 @@ jobs:
           VERSION_FILE_PATH: src/Directory.Build.props
           PROJECT_FILE_PATH: src/Mediator.SourceGenerator/Mediator.SourceGenerator.csproj
           NUGET_KEY: ${{secrets.NUGET_API_KEY}}
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 6.0.x
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test Tests/Tests.csproj --no-build --logger "console;verbosity=detailed" /p:AltCover=true
