@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<AssemblyName>Mediator.SourceGenerator</AssemblyName>
+		<AssemblyName>Zapto.Mediator.SourceGenerator</AssemblyName>
 		<RootNamespace>Zapto.Mediator.Generator</RootNamespace>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<LangVersion>10</LangVersion>
@@ -11,7 +11,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Title>Mediator.SourceGenerator</Title>
+		<Title>Zapto.Mediator.SourceGenerator</Title>
 	</PropertyGroup>
 
 	<ItemGroup>
