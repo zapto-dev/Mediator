@@ -30,6 +30,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\src\Mediator.SourceGenerator\Mediator.SourceGenerator.csproj" />
       <ProjectReference Include="..\..\src\Mediator\Mediator.csproj" />
+      <ProjectReference Include="..\Mediator.DependencyInjection.Tests\Mediator.DependencyInjection.Tests.csproj" />
     </ItemGroup>
 
 </Project>

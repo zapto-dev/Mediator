@@ -36,6 +36,7 @@ public class SenderGenerator : IIncrementalGenerator
     {
         var models = new Dictionary<SyntaxTree, SemanticModel>();
         var requests = new List<ExtensionMethodReference>();
+        var handlers = new List<HandlerReference>();
 
         SemanticModel GetModel(SyntaxNode item)
         {
@@ -117,6 +118,21 @@ public class SenderGenerator : IIncrementalGenerator
                         results
                     ));
                 }
+
+                if (!symbol.IsAbstract &&
+                    !symbol.IsGenericType &&
+                    current.IsGenericType &&
+                    current
+                        is { Name: "IRequestHandler", TypeArguments.Length: 2 }
+                        or { Name: "INotificationHandler", TypeArguments.Length: 1 }
+                        or { Name: "IStreamRequestHandler", TypeArguments.Length: 2 } &&
+                    !symbol.GetAttributes().Any(i => i.AttributeClass?.Name == "IgnoreHandlerAttribute"))
+                {
+                    handlers.Add(new HandlerReference(
+                        symbol,
+                        current
+                    ));
+                }
             }
         }
 
@@ -126,24 +142,91 @@ public class SenderGenerator : IIncrementalGenerator
         }
 
         var sb = new StringBuilder();
+        var intentDepth = 0;
+
+        void AppendIntend()
+        {
+            for (var i = 0; i < intentDepth; i++)
+            {
+                sb.Append("    ");
+            }
+        }
         sb.AppendLine("#nullable enable");
         sb.AppendLine();
 
+        // Dependency injection
+        if (compilation.GetTypeByMetadataName("Zapto.Mediator.ServiceProviderMediator") != null)
+        {
+            AppendIntend();
+            sb.AppendLine("namespace Zapto.Mediator");
+            AppendIntend();
+            sb.AppendLine("{");
+            intentDepth++;
+            {
+                AppendIntend();
+                sb.AppendLine("internal static class AssemblyExtensions_" + compilation.Assembly.Name.Replace('.', '_'));
+                AppendIntend();
+                sb.AppendLine("{");
+                intentDepth++;
+
+                const string services = "global::Microsoft.Extensions.DependencyInjection.IServiceCollection";
+        
+                AppendIntend();
+                sb.AppendLine($"public static {services} AddAssemblyHandlers({services} services)");
+                AppendIntend();
+                sb.AppendLine("{");
+                intentDepth++;
+
+                foreach (var handler in handlers)
+                {
+                    AppendIntend();
+                    
+                    if (handler.Interface.Name is "IRequestHandler")
+                    {
+                        sb.Append("services.AddRequestHandler(typeof(");
+                        sb.AppendType(handler.Type, addNullable: false);
+                        sb.AppendLine("));");
+                    }
+                    else if (handler.Interface.Name == "INotificationHandler")
+                    {
+                        sb.Append("services.AddNotificationHandler(typeof(");
+                        sb.AppendType(handler.Type, addNullable: false);
+                        sb.AppendLine("));");
+                    }
+                    else if (handler.Interface.Name == "IStreamRequestHandler")
+                    {
+                        sb.Append("services.AddStreamRequestHandler(typeof(");
+                        sb.AppendType(handler.Type, addNullable: false);
+                        sb.AppendLine("));");
+                    }
+                }
+
+                AppendIntend();
+                sb.AppendLine("return services;");
+                
+                intentDepth--;
+                AppendIntend();
+                sb.AppendLine("}");
+            }
+            intentDepth--;
+            AppendIntend();
+            sb.AppendLine("}");
+            
+            intentDepth--;
+            AppendIntend();
+            sb.AppendLine("}");
+            sb.AppendLine();
+        }
+
+        // Send message
         foreach (var group in requests.GroupBy(i => (
             Namespace: i.Type.ContainingNamespace is { Name: null or "" } ? "" : i.Type.ContainingNamespace.ToDisplayString(),
             Assembly: i.Type.ContainingAssembly?.Name ?? ""
         )))
         {
             var hasNamespace = !string.IsNullOrWhiteSpace(group.Key.Namespace);
-            var intentDepth = hasNamespace ? 1 : 0;
 
-            void AppendIntend()
-            {
-                for (var i = 0; i < intentDepth; i++)
-                {
-                    sb.Append("    ");
-                }
-            }
+            intentDepth = hasNamespace ? 1 : 0;
 
             if (hasNamespace)
             {
