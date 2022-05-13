@@ -64,6 +64,17 @@ public record Request<T>(T Argument) : IRequest<T>;";
     }
 
     [Fact]
+    public Task GenerateGenericDifferentResult()
+    {
+        const string source = @"
+using MediatR;
+
+public record Request<T>(T Argument) : IRequest<string>;";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
+
+    [Fact]
     public Task GenerateGenericConstraint()
     {
         const string source = @"

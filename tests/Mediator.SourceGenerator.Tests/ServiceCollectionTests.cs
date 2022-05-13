@@ -29,6 +29,26 @@ public class RequestHandler : IRequestHandler<Request>
     }
     
     [Fact]
+    public Task GenerateGenericCollection()
+    {
+        const string source = @"
+using MediatR;
+using Zapto.Mediator;
+
+public record Request<T> : IRequest;
+
+public class RequestHandler<T> : IRequestHandler<Request<T>>
+{
+    public ValueTask<Unit> Handle(IServiceProvider provider, Request<T> request, CancellationToken cancellationToken)
+    {
+        return default;
+    }
+}";
+
+        return TestHelper.Verify<SenderGenerator>(source, typeof(Zapto.Mediator.ServiceProviderMediator));
+    }
+    
+    [Fact]
     public Task IgnoreHandlerAttribute()
     {
         const string source = @"

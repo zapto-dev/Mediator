@@ -59,7 +59,8 @@ public static class StringBuilderExtensions
         this StringBuilder sb,
         ITypeSymbol type,
         bool addNullable = true,
-        Func<ITypeSymbol, bool>? middleware = null)
+        Func<ITypeSymbol, bool>? middleware = null,
+        bool addGenericNames = true)
     {
         if (type is not {SpecialType: SpecialType.None})
         {
@@ -91,11 +92,18 @@ public static class StringBuilderExtensions
             var length = namedTypeSymbol.TypeArguments.Length;
             for (var i = 0; i < length; i++)
             {
-                AppendType(sb, namedTypeSymbol.TypeArguments[i], false, middleware);
-
-                if (i != length - 1)
+                if (addGenericNames)
                 {
-                    sb.Append(", ");
+                    AppendType(sb, namedTypeSymbol.TypeArguments[i], false, middleware);
+
+                    if (i != length - 1)
+                    {
+                        sb.Append(", ");
+                    }
+                }
+                else if (i != length - 1)
+                {
+                    sb.Append(",");
                 }
             }
 
