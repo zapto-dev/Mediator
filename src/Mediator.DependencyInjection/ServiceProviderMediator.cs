@@ -134,18 +134,16 @@ public class ServiceProviderMediator : IMediator
     }
 
     /// <inheritdoc />
-    public ValueTask Publish<TNotification>(MediatorNamespace ns, TNotification notification, CancellationToken cancellationToken = default)
+    public async ValueTask Publish<TNotification>(MediatorNamespace ns, TNotification notification, CancellationToken cancellationToken = default)
         where TNotification : INotification
     {
         var services = _provider
             .GetServices<INamespaceNotificationHandler<TNotification>>()
-            .FirstOrDefault(i => i.Namespace == ns);
+            .Where(i => i.Namespace == ns);
 
-        if (services == null)
+        foreach (var factory in services)
         {
-            throw new InvalidOperationException();
+            await factory.GetHandler(_provider).Handle(_provider, notification, cancellationToken);
         }
-
-        return services.GetHandler(_provider).Handle(_provider, notification, cancellationToken);
     }
 }

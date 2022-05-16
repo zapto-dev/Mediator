@@ -17,7 +17,7 @@ public class GenericNotificationHandler<T> : INotificationHandler<GenericNotific
     public ValueTask Handle(IServiceProvider provider, GenericNotification<T> notification,
         CancellationToken cancellationToken)
     {
-        _result.Object = notification.Value;
+        _result.Values.Add(notification.Value);
         return default;
     }
 }

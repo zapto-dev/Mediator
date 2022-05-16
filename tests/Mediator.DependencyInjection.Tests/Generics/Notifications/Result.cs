@@ -1,6 +1,8 @@
-﻿namespace Mediator.DependencyInjection.Tests.Generics;
+﻿using System.Collections.Generic;
+
+namespace Mediator.DependencyInjection.Tests.Generics;
 
 public class Result
 {
-    public object? Object { get; set; }
+    public List<object?> Values { get; } = new();
 }

@@ -18,18 +18,34 @@ public class NotificationGenericTest
             .AddMediator()
             .AddSingleton(result)
             .AddNotificationHandler(typeof(GenericNotificationHandler<>))
+            .AddNotificationHandler(typeof(GenericNotificationHandler<>))
             .BuildServiceProvider();
 
         await provider
             .GetRequiredService<IMediator>()
             .Publish(new GenericNotification<string?>(expected));
 
-        Assert.Equal(expected, result.Object);
+        Assert.Equal(2, result.Values.Count);
+        result.Values.Clear();
 
         await provider
             .GetRequiredService<IMediator>()
             .Publish(new GenericNotification<string?>(null));
 
-        Assert.Null(result.Object);
+        Assert.Equal(2, result.Values.Count);
+    }
+
+    [Fact]
+    public async Task NoRegistration()
+    {
+        const string expected = "success";
+
+        await using var provider = new ServiceCollection()
+            .AddMediator()
+            .BuildServiceProvider();
+
+        await provider
+            .GetRequiredService<IMediator>()
+            .Publish(new GenericNotification<string?>(expected));
     }
 }
