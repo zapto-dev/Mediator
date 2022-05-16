@@ -13,7 +13,7 @@ public static partial class ServiceExtensions
         Type? responseType,
         Type handlerType)
     {
-        if (requestType.IsGenericType || responseType is null || responseType.IsGenericType)
+        if (requestType.IsGenericType || responseType is null || responseType.IsGenericTypeDefinition)
         {
             services.AddTransient(handlerType);
             services.AddSingleton(new GenericRequestRegistration(requestType, responseType, handlerType));
@@ -47,13 +47,28 @@ public static partial class ServiceExtensions
                 responseType switch
                 {
                     { IsGenericParameter: true } => null,
-                    { IsGenericType: true } => responseType.GetGenericTypeDefinition(),
+                    { IsGenericType: true } when HasGenericParameter(responseType) => responseType.GetGenericTypeDefinition(),
                     _ => responseType
                 },
                 handlerType);
         }
 
         return services;
+    }
+
+    private static bool HasGenericParameter(Type type)
+    {
+        if (type.IsGenericParameter)
+        {
+            return true;
+        }
+
+        if (type.IsGenericType)
+        {
+            return type.GetGenericArguments().Any(HasGenericParameter);
+        }
+
+        return false;
     }
 
     public static IServiceCollection AddRequestHandler<THandler>(this IServiceCollection services)

@@ -13,6 +13,14 @@ namespace Mediator.DependencyInjection.Tests;
 
 public record Request : IRequest<int>;
 
+public record ListRequest : IRequest<IReadOnlyList<int>>;
+
+public class ListHandler : IRequestHandler<ListRequest, IReadOnlyList<int>>
+{
+    public ValueTask<IReadOnlyList<int>> Handle(IServiceProvider provider, ListRequest request, CancellationToken cancellationToken)
+        => new(Array.Empty<int>());
+}
+
 public class RequestTest
 {
     [Fact]
@@ -84,5 +92,19 @@ public class RequestTest
         await mediator.Send<Request, int>(ns, new Request());
 
         handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task TestCollection()
+    {
+        var serviceProvider = new ServiceCollection()
+            .AddMediator()
+            .AddRequestHandler(typeof(ListHandler))
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+        var result = await mediator.Send<ListRequest, IReadOnlyList<int>>(new ListRequest());
+
+        Assert.Equal(0, result.Count);
     }
 }
