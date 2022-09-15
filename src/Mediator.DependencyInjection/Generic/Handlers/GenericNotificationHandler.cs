@@ -21,19 +21,19 @@ internal sealed class GenericNotificationRegistration
     public Type HandlerType { get; }
 }
 
-internal sealed class GenericNotificationCache
+internal sealed class GenericNotificationCache<TNotification>
 {
-    public ConcurrentDictionary<Type, Type> Handlers { get; } = new();
+    public Type? NotificationType { get; set; }
 }
 
 internal sealed class GenericNotificationHandler<TNotification> : INotificationHandler<TNotification>
     where TNotification : INotification
 {
-    private readonly GenericNotificationCache _cache;
+    private readonly GenericNotificationCache<TNotification> _cache;
     private readonly IEnumerable<GenericNotificationRegistration> _enumerable;
     private readonly IServiceProvider _serviceProvider;
 
-    public GenericNotificationHandler(IEnumerable<GenericNotificationRegistration> enumerable, IServiceProvider serviceProvider, GenericNotificationCache cache)
+    public GenericNotificationHandler(IEnumerable<GenericNotificationRegistration> enumerable, IServiceProvider serviceProvider, GenericNotificationCache<TNotification> cache)
     {
         _enumerable = enumerable;
         _serviceProvider = serviceProvider;
@@ -42,20 +42,20 @@ internal sealed class GenericNotificationHandler<TNotification> : INotificationH
 
     public async ValueTask Handle(IServiceProvider provider, TNotification notification, CancellationToken ct)
     {
-        var notificationType = typeof(TNotification);
-
-        if (!notificationType.IsGenericType)
+        if (_cache.NotificationType is {} cachedType)
         {
-            return;
-        }
-
-        if (_cache.Handlers.TryGetValue(notificationType, out var handlerType))
-        {
-            foreach (var handler in _serviceProvider.GetServices(handlerType))
+            foreach (var handler in _serviceProvider.GetServices(cachedType))
             {
                 await ((INotificationHandler<TNotification>)handler!).Handle(provider, notification, ct);
             }
 
+            return;
+        }
+
+        var notificationType = typeof(TNotification);
+
+        if (!notificationType.IsGenericType)
+        {
             return;
         }
 
@@ -71,7 +71,7 @@ internal sealed class GenericNotificationHandler<TNotification> : INotificationH
 
             var type = registration.HandlerType.MakeGenericType(arguments);
 
-            _cache.Handlers.TryAdd(notificationType, type);
+            _cache.NotificationType = type;
 
             foreach (var handler in _serviceProvider.GetServices(type))
             {

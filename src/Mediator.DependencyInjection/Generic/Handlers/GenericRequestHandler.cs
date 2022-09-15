@@ -24,19 +24,19 @@ internal sealed class GenericRequestRegistration
     public Type HandlerType { get; }
 }
 
-internal sealed class GenericRequestCache
+internal sealed class GenericRequestCache<TRequest, TResponse>
 {
-    public ConcurrentDictionary<(Type Request, Type Response), Type> Handlers { get; } = new();
+    public Type? RequestHandlerType { get; set; }
 }
 
 internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
-    private readonly GenericRequestCache _cache;
+    private readonly GenericRequestCache<TRequest, TResponse> _cache;
     private readonly IEnumerable<GenericRequestRegistration> _enumerable;
     private readonly IServiceProvider _serviceProvider;
 
-    public GenericRequestHandler(IEnumerable<GenericRequestRegistration> enumerable, IServiceProvider serviceProvider, GenericRequestCache cache)
+    public GenericRequestHandler(IEnumerable<GenericRequestRegistration> enumerable, IServiceProvider serviceProvider, GenericRequestCache<TRequest, TResponse> cache)
     {
         _enumerable = enumerable;
         _serviceProvider = serviceProvider;
@@ -45,16 +45,15 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
 
     public async ValueTask<TResponse> Handle(IServiceProvider provider, TRequest request, CancellationToken ct)
     {
-        var requestType = typeof(TRequest);
-        var responseType = typeof(TResponse);
-        var cacheKey = (requestType, responseType);
-
-        if (_cache.Handlers.TryGetValue(cacheKey, out var handlerType))
+        if (_cache.RequestHandlerType is {} cachedType)
         {
-            var handler = _serviceProvider.GetRequiredService(handlerType);
+            var handler = _serviceProvider.GetRequiredService(cachedType);
 
             return await ((IRequestHandler<TRequest, TResponse>)handler).Handle(provider, request, ct);
         }
+
+        var requestType = typeof(TRequest);
+        var responseType = typeof(TResponse);
 
         if (!requestType.IsGenericType)
         {
@@ -81,7 +80,7 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
             var type = registration.HandlerType.MakeGenericType(arguments);
             var handler = (IRequestHandler<TRequest, TResponse>) _serviceProvider.GetRequiredService(type);
 
-            _cache.Handlers.TryAdd(cacheKey, type);
+            _cache.RequestHandlerType = type;
 
             return await handler.Handle(provider, request, ct);
         }

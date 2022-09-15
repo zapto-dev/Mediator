@@ -11,10 +11,10 @@ public static partial class ServiceExtensions
         services.AddTransient<ISender, ServiceProviderMediator>();
         services.AddTransient<IPublisher, ServiceProviderMediator>();
 
-        services.AddSingleton<GenericRequestCache>();
+        services.AddSingleton(typeof(GenericRequestCache<,>));
         services.AddTransient(typeof(IRequestHandler<,>), typeof(GenericRequestHandler<,>));
 
-        services.AddSingleton<GenericNotificationCache>();
+        services.AddSingleton(typeof(GenericNotificationCache<>));
         services.AddTransient(typeof(GenericNotificationHandler<>));
 
         return services;
