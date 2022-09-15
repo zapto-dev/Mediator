@@ -19,9 +19,11 @@ public class NotificationTest
         var handler = new Mock<INotificationHandler<Notification>>();
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddNotificationHandler(handler.Object)
-            .AddNotificationHandler(handler.Object)
+            .AddMediator(b =>
+            {
+                b.AddNotificationHandler(handler.Object);
+                b.AddNotificationHandler(handler.Object);
+            })
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
@@ -37,9 +39,11 @@ public class NotificationTest
         var handler = new Mock<INotificationHandler<Notification>>();
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddNotificationHandler(handler.Object)
-            .AddNotificationHandler(handler.Object)
+            .AddMediator(b =>
+            {
+                b.AddNotificationHandler(handler.Object);
+                b.AddNotificationHandler(handler.Object);
+            })
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
@@ -56,11 +60,15 @@ public class NotificationTest
         var handler = new Mock<INotificationHandler<Notification>>();
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddNotificationHandler(handler.Object)
-            .AddNotificationHandler(handler.Object)
-            .AddNotificationHandler(handler.Object, ns)
-            .AddNotificationHandler(handler.Object, ns)
+            .AddMediator(b =>
+            {
+                b.AddNotificationHandler(handler.Object);
+                b.AddNotificationHandler(handler.Object);
+
+                b.AddNamespace(ns)
+                    .AddNotificationHandler(handler.Object)
+                    .AddNotificationHandler(handler.Object);
+            })
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
@@ -75,7 +83,7 @@ public class NotificationTest
     public async Task TestNoRegistration()
     {
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
+            .AddMediator(_ => { })
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
@@ -89,7 +97,7 @@ public class NotificationTest
         var ns = new MediatorNamespace("test");
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
+            .AddMediator(_ => { })
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();

@@ -5,28 +5,27 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Zapto.Mediator;
 
-public static partial class ServiceExtensions
+public partial class MediatorBuilder
 {
-    public static IServiceCollection AddRequestHandler(
-        this IServiceCollection services,
+    public IMediatorBuilder AddRequestHandler(
         Type requestType,
         Type? responseType,
         Type handlerType)
     {
         if (requestType.IsGenericType || responseType is null || responseType.IsGenericTypeDefinition)
         {
-            services.AddTransient(handlerType);
-            services.AddSingleton(new GenericRequestRegistration(requestType, responseType, handlerType));
+            _services.AddTransient(handlerType);
+            _services.AddSingleton(new GenericRequestRegistration(requestType, responseType, handlerType));
         }
         else
         {
-            services.AddTransient(typeof(IRequestHandler<,>).MakeGenericType(requestType, responseType), handlerType);
+            _services.AddTransient(typeof(IRequestHandler<,>).MakeGenericType(requestType, responseType), handlerType);
         }
 
-        return services;
+        return this;
     }
 
-    public static IServiceCollection AddRequestHandler(this IServiceCollection services, Type handlerType)
+    public IMediatorBuilder AddRequestHandler(Type handlerType)
     {
         var handlers = handlerType.GetInterfaces()
             .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IRequestHandler<,>))
@@ -42,7 +41,7 @@ public static partial class ServiceExtensions
                 requestType = requestType.GetGenericTypeDefinition();
             }
 
-            services.AddRequestHandler(
+            AddRequestHandler(
                 requestType,
                 responseType switch
                 {
@@ -53,7 +52,7 @@ public static partial class ServiceExtensions
                 handlerType);
         }
 
-        return services;
+        return this;
     }
 
     private static bool HasGenericParameter(Type type)
@@ -71,10 +70,10 @@ public static partial class ServiceExtensions
         return false;
     }
 
-    public static IServiceCollection AddRequestHandler<THandler>(this IServiceCollection services)
+    public IMediatorBuilder AddRequestHandler<THandler>()
         where THandler : IRequestHandler
     {
-        AddRequestHandler(services, typeof(THandler));
-        return services;
+        AddRequestHandler(typeof(THandler));
+        return this;
     }
 }

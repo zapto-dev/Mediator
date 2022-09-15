@@ -24,8 +24,7 @@ public class StreamRequestTest
             .Returns(Array.Empty<int>().ToAsyncEnumerable());
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddStreamRequestHandler(handler.Object)
+            .AddMediator(b => b.AddStreamRequestHandler(handler.Object))
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
@@ -46,8 +45,7 @@ public class StreamRequestTest
             .Returns(Array.Empty<int>().ToAsyncEnumerable());
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddStreamRequestHandler(handler.Object)
+            .AddMediator(b => b.AddStreamRequestHandler(handler.Object))
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
@@ -68,8 +66,7 @@ public class StreamRequestTest
             .Returns(Array.Empty<int>().ToAsyncEnumerable());
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddStreamRequestHandler(handler.Object)
+            .AddMediator(b => b.AddStreamRequestHandler(handler.Object))
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
@@ -91,9 +88,11 @@ public class StreamRequestTest
             .Returns(Array.Empty<int>().ToAsyncEnumerable());
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddStreamRequestHandler(handler.Object)
-            .AddStreamRequestHandler(handler.Object, ns)
+            .AddMediator(b =>
+            {
+                b.AddStreamRequestHandler(handler.Object);
+                b.AddNamespace(ns).AddStreamRequestHandler(handler.Object);
+            })
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();

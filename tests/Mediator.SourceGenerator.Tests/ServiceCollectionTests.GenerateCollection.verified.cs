@@ -5,10 +5,10 @@ namespace Zapto.Mediator
 {
     internal static class AssemblyExtensions_Tests
     {
-        public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddAssemblyHandlers(this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)
+        public static global::Zapto.Mediator.IMediatorBuilder AddAssemblyHandlers(this global::Zapto.Mediator.IMediatorBuilder builder)
         {
-            services.AddRequestHandler(typeof(global::RequestHandler));
-            return services;
+            builder.AddRequestHandler(typeof(global::RequestHandler));
+            return builder;
         }
     }
 }

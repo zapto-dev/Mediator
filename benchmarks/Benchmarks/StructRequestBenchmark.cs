@@ -23,8 +23,8 @@ public class StructRequestBenchmark
 
         services.AddMediatR(typeof(Program).Assembly);
 
-        services.AddMediator();
-        services.AddRequestHandler<PingStruct, string, PingStructHandlerZapto>();
+        var builder = services.AddMediator();
+        builder.AddRequestHandler<PingStruct, string, PingStructHandlerZapto>();
 
         var provider = services.BuildServiceProvider();
 

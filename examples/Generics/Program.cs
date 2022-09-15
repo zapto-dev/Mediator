@@ -4,9 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();
 
-// Add mediator
-services.AddMediator();
-services.AddAssemblyHandlers(); // Add all handlers from the current assembly
+services.AddMediator(builder =>
+{
+    // Add all handlers from the current assembly
+    builder.AddAssemblyHandlers();
+});
 
 // Create the service provider and execute the request
 await using var provider = services.BuildServiceProvider();

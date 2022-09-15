@@ -13,8 +13,10 @@ public class RequestGenericTest
         const string expected = "success";
 
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler(typeof(ReturnGenericRequestHandler<>))
+            .AddMediator(b =>
+            {
+                b.AddRequestHandler(typeof(ReturnGenericRequestHandler<>));
+            })
             .BuildServiceProvider();
 
         var result = await provider
@@ -36,9 +38,11 @@ public class RequestGenericTest
         const string expected = "success";
 
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler<ReturnHandler>()
-            .AddRequestHandler(typeof(ReturnGenericRequestHandler<>))
+            .AddMediator(b =>
+            {
+                b.AddRequestHandler<ReturnHandler>();
+                b.AddRequestHandler(typeof(ReturnGenericRequestHandler<>));
+            })
             .BuildServiceProvider();
 
         var genericResult = await provider
@@ -60,8 +64,10 @@ public class RequestGenericTest
         const int expected = 1;
 
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler(typeof(ReturnNullableGenericHandler<>))
+            .AddMediator(b =>
+            {
+                b.AddRequestHandler(typeof(ReturnNullableGenericHandler<>));
+            })
             .BuildServiceProvider();
 
         var result = await provider

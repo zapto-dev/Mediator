@@ -5,9 +5,9 @@ namespace Zapto.Mediator
 {
     internal static class AssemblyExtensions_Tests
     {
-        public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddAssemblyHandlers(this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)
+        public static global::Zapto.Mediator.IMediatorBuilder AddAssemblyHandlers(this global::Zapto.Mediator.IMediatorBuilder builder)
         {
-            return services;
+            return builder;
         }
     }
 }

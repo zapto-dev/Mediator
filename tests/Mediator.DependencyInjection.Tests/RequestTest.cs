@@ -29,8 +29,7 @@ public class RequestTest
         var handler = new Mock<IRequestHandler<Request, int>>();
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler(handler.Object)
+            .AddMediator(b => b.AddRequestHandler(handler.Object))
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
@@ -46,8 +45,7 @@ public class RequestTest
         var handler = new Mock<IRequestHandler<Request, int>>();
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler(handler.Object)
+            .AddMediator(b => b.AddRequestHandler(handler.Object))
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
@@ -63,8 +61,7 @@ public class RequestTest
         var handler = new Mock<IRequestHandler<Request, int>>();
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler(handler.Object)
+            .AddMediator(b => b.AddRequestHandler(handler.Object))
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
@@ -81,9 +78,11 @@ public class RequestTest
         var handler = new Mock<IRequestHandler<Request, int>>();
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler(handler.Object)
-            .AddRequestHandler(handler.Object, ns)
+            .AddMediator(b =>
+            {
+                b.AddRequestHandler(handler.Object);
+                b.AddNamespace(ns).AddRequestHandler(handler.Object);
+            })
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
@@ -98,8 +97,7 @@ public class RequestTest
     public async Task TestCollection()
     {
         var serviceProvider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler(typeof(ListHandler))
+            .AddMediator(b => b.AddRequestHandler(typeof(ListHandler)))
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();

@@ -19,8 +19,7 @@ public class RequestDelegateTest
         const string expected = "success";
 
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler((StringRequest _) => expected)
+            .AddMediator(b => b.AddRequestHandler((StringRequest _) => expected))
             .BuildServiceProvider();
 
         Assert.Equal(
@@ -35,8 +34,7 @@ public class RequestDelegateTest
         const string expected = "success";
 
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler((StringRequest _) => Task.FromResult(expected))
+            .AddMediator(b => b.AddRequestHandler((StringRequest _) => Task.FromResult(expected)))
             .BuildServiceProvider();
 
         Assert.Equal(
@@ -51,8 +49,7 @@ public class RequestDelegateTest
         const string expected = "success";
 
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler((StringRequest _) => new ValueTask<string>(expected))
+            .AddMediator(b => b.AddRequestHandler((StringRequest _) => new ValueTask<string>(expected)))
             .BuildServiceProvider();
 
         Assert.Equal(
@@ -65,8 +62,7 @@ public class RequestDelegateTest
     public async Task ValidCast()
     {
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler((LongRequest _) => 1)
+            .AddMediator(b => b.AddRequestHandler((LongRequest _) => 1))
             .BuildServiceProvider();
 
         Assert.Equal(
@@ -79,8 +75,7 @@ public class RequestDelegateTest
     public async Task ValidTaskCast()
     {
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler((LongRequest _) => Task.FromResult(1))
+            .AddMediator(b => b.AddRequestHandler((LongRequest _) => Task.FromResult(1)))
             .BuildServiceProvider();
 
         Assert.Equal(
@@ -93,8 +88,7 @@ public class RequestDelegateTest
     public async Task ValidValueTaskCast()
     {
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddRequestHandler((LongRequest _) => new ValueTask<int>(1))
+            .AddMediator(b => b.AddRequestHandler((LongRequest _) => new ValueTask<int>(1)))
             .BuildServiceProvider();
 
         Assert.Equal(

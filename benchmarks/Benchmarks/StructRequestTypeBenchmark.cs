@@ -16,12 +16,14 @@ public class StructRequestTypeBenchmark
     {
         var services = new ServiceCollection();
 
-        services.AddMediator();
-        services.AddRequestHandler<PingStruct, string, PingStructHandlerZapto>();
-        services.AddRequestHandler<PingStruct, string, PingStructHandlerZapto>(CustomNamespace);
-        services.AddRequestHandler((PingStructDelegate _) => "pong");
-        services.AddRequestHandler((PingStructDelegate _) => "pong", CustomNamespace);
-        services.AddRequestHandler(typeof(ReturnStructGenericHandlerZapto<>));
+        var builder = services.AddMediator();
+        builder.AddRequestHandler<PingStruct, string, PingStructHandlerZapto>();
+        builder.AddRequestHandler((PingStructDelegate _) => "pong");
+        builder.AddRequestHandler(typeof(ReturnStructGenericHandlerZapto<>));
+
+        var builderNs = builder.AddNamespace(CustomNamespace);
+        builderNs.AddRequestHandler<PingStruct, string, PingStructHandlerZapto>();
+        builderNs.AddRequestHandler((PingStructDelegate _) => "pong");
 
         var provider = services.BuildServiceProvider();
 

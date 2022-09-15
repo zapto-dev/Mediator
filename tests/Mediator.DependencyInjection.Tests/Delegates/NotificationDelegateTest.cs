@@ -15,10 +15,12 @@ public class NotificationDelegateTest
         var called = false;
 
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddNotificationHandler((Notification _) =>
+            .AddMediator(b =>
             {
-                called = true;
+                b.AddNotificationHandler((Notification _) =>
+                {
+                    called = true;
+                });
             })
             .BuildServiceProvider();
 
@@ -34,11 +36,13 @@ public class NotificationDelegateTest
         var called = false;
 
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddNotificationHandler((Notification _) =>
+            .AddMediator(b =>
             {
-                called = true;
-                return Task.CompletedTask;
+                b.AddNotificationHandler((Notification _) =>
+                {
+                    called = true;
+                    return Task.CompletedTask;
+                });
             })
             .BuildServiceProvider();
 
@@ -54,11 +58,13 @@ public class NotificationDelegateTest
         var called = false;
 
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddNotificationHandler((Notification _) =>
+            .AddMediator(b =>
             {
-                called = true;
-                return default(ValueTask);
+                b.AddNotificationHandler((Notification _) =>
+                {
+                    called = true;
+                    return default(ValueTask);
+                });
             })
             .BuildServiceProvider();
 
@@ -74,11 +80,13 @@ public class NotificationDelegateTest
         var called = false;
 
         await using var provider = new ServiceCollection()
-            .AddMediator()
-            .AddNotificationHandler((Notification _) =>
+            .AddMediator(b =>
             {
-                called = true;
-                return true;
+                b.AddNotificationHandler((Notification _) =>
+                {
+                    called = true;
+                    return true;
+                });
             })
             .BuildServiceProvider();
 

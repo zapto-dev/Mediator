@@ -263,10 +263,10 @@ public class SenderGenerator : IIncrementalGenerator
                 sb.AppendLine("{");
                 intentDepth++;
 
-                const string services = "global::Microsoft.Extensions.DependencyInjection.IServiceCollection";
-        
+                const string builder = "global::Zapto.Mediator.IMediatorBuilder";
+
                 AppendIntend();
-                sb.AppendLine($"public static {services} AddAssemblyHandlers(this {services} services)");
+                sb.AppendLine($"public static {builder} AddAssemblyHandlers(this {builder} builder)");
                 AppendIntend();
                 sb.AppendLine("{");
                 intentDepth++;
@@ -277,26 +277,26 @@ public class SenderGenerator : IIncrementalGenerator
                     
                     if (handler.Interface.Name is "IRequestHandler")
                     {
-                        sb.Append("services.AddRequestHandler(typeof(");
+                        sb.Append("builder.AddRequestHandler(typeof(");
                         sb.AppendType(handler.Type, addNullable: false, addGenericNames: false);
                         sb.AppendLine("));");
                     }
                     else if (handler.Interface.Name == "INotificationHandler")
                     {
-                        sb.Append("services.AddNotificationHandler(typeof(");
+                        sb.Append("builder.AddNotificationHandler(typeof(");
                         sb.AppendType(handler.Type, addNullable: false, addGenericNames: false);
                         sb.AppendLine("));");
                     }
                     else if (handler.Interface.Name == "IStreamRequestHandler")
                     {
-                        sb.Append("services.AddStreamRequestHandler(typeof(");
+                        sb.Append("builder.AddStreamRequestHandler(typeof(");
                         sb.AppendType(handler.Type, addNullable: false, addGenericNames: false);
                         sb.AppendLine("));");
                     }
                 }
 
                 AppendIntend();
-                sb.AppendLine("return services;");
+                sb.AppendLine("return builder;");
                 
                 intentDepth--;
                 AppendIntend();

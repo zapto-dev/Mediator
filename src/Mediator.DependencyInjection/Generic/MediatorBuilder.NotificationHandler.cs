@@ -5,27 +5,26 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Zapto.Mediator;
 
-public static partial class ServiceExtensions
+public partial class MediatorBuilder
 {
-    public static IServiceCollection AddNotificationHandler(
-        this IServiceCollection services,
+    public IMediatorBuilder AddNotificationHandler(
         Type notificationType,
         Type handlerType)
     {
         if (notificationType.IsGenericType)
         {
-            services.AddTransient(handlerType);
-            services.AddSingleton(new GenericNotificationRegistration(notificationType, handlerType));
+            _services.AddTransient(handlerType);
+            _services.AddSingleton(new GenericNotificationRegistration(notificationType, handlerType));
         }
         else
         {
-            services.AddTransient(typeof(INotificationHandler<>).MakeGenericType(notificationType), handlerType);
+            _services.AddTransient(typeof(INotificationHandler<>).MakeGenericType(notificationType), handlerType);
         }
 
-        return services;
+        return this;
     }
 
-    public static IServiceCollection AddNotificationHandler(this IServiceCollection services, Type handlerType)
+    public IMediatorBuilder AddNotificationHandler(Type handlerType)
     {
         var handlers = handlerType.GetInterfaces()
             .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(INotificationHandler<>))
@@ -40,18 +39,18 @@ public static partial class ServiceExtensions
                 notificationType = notificationType.GetGenericTypeDefinition();
             }
 
-            services.AddNotificationHandler(
+            AddNotificationHandler(
                 notificationType,
                 handlerType);
         }
 
-        return services;
+        return this;
     }
 
-    public static IServiceCollection AddNotificationHandler<THandler>(this IServiceCollection services)
+    public IMediatorBuilder AddNotificationHandler<THandler>()
         where THandler : INotificationHandler
     {
-        AddNotificationHandler(services, typeof(THandler));
-        return services;
+        AddNotificationHandler(typeof(THandler));
+        return this;
     }
 }

@@ -15,10 +15,12 @@ public class NotificationGenericTest
         var result = new Result();
 
         await using var provider = new ServiceCollection()
-            .AddMediator()
+            .AddMediator(b =>
+            {
+                b.AddNotificationHandler(typeof(GenericNotificationHandler<>));
+                b.AddNotificationHandler(typeof(GenericNotificationHandler<>));
+            })
             .AddSingleton(result)
-            .AddNotificationHandler(typeof(GenericNotificationHandler<>))
-            .AddNotificationHandler(typeof(GenericNotificationHandler<>))
             .BuildServiceProvider();
 
         await provider
@@ -41,7 +43,7 @@ public class NotificationGenericTest
         const string expected = "success";
 
         await using var provider = new ServiceCollection()
-            .AddMediator()
+            .AddMediator(_ => {})
             .BuildServiceProvider();
 
         await provider

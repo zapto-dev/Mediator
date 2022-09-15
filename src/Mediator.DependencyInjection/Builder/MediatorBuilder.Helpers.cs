@@ -8,20 +8,18 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Zapto.Mediator;
 
-public static partial class ServiceExtensions
+public partial class MediatorBuilder
 {
     private static readonly ConstructorInfo NewValueTaskConstructor = typeof(ValueTask).GetConstructor(new[] {typeof(Task)})!;
-    private static readonly MethodInfo CastValueTaskMethod = typeof(ServiceExtensions).GetMethod(nameof(CastValueTask), BindingFlags.NonPublic | BindingFlags.Static)!;
-    private static readonly MethodInfo CastTaskMethod = typeof(ServiceExtensions).GetMethod(nameof(CastTask), BindingFlags.NonPublic | BindingFlags.Static)!;
+    private static readonly MethodInfo CastValueTaskMethod = typeof(MediatorBuilder).GetMethod(nameof(CastValueTask), BindingFlags.NonPublic | BindingFlags.Static)!;
+    private static readonly MethodInfo CastTaskMethod = typeof(MediatorBuilder).GetMethod(nameof(CastTask), BindingFlags.NonPublic | BindingFlags.Static)!;
 
-    private static void RegisterHandler(
+    private void RegisterHandler(
         string registerMethodName,
         Type parameterTypeTarget,
         string noResultMessage,
         string multipleResultMessage,
-        IServiceCollection services,
-        Delegate handler,
-        MediatorNamespace? ns)
+        Delegate handler)
     {
         var method = handler.GetMethodInfo();
         var parameterTargets = method
@@ -103,7 +101,7 @@ public static partial class ServiceExtensions
                 {
                     result = call;
                 }
-                else if (resultType.CanConvertFrom(fromType, out var converter))
+                else if (CanConvertFrom(resultType, fromType, out var converter))
                 {
                     result = Expression.Call(
                         CastValueTaskMethod.MakeGenericMethod(fromType, resultType),
@@ -128,7 +126,7 @@ public static partial class ServiceExtensions
                             .GetConstructor(new[] { typeof(Task<>).MakeGenericType(resultType) })!,
                         call);
                 }
-                else if (resultType.CanConvertFrom(fromType, out var converter))
+                else if (CanConvertFrom(resultType, fromType, out var converter))
                 {
                     result = Expression.Call(
                         CastTaskMethod.MakeGenericMethod(fromType, resultType),
@@ -149,7 +147,7 @@ public static partial class ServiceExtensions
                         .GetConstructor(new[] { resultType })!,
                     call);
             }
-            else if (resultType.CanConvertFrom(call.Type, out _))
+            else if (CanConvertFrom(resultType, call.Type, out _))
             {
                 result = Expression.New(
                     typeof(ValueTask<>)
@@ -164,17 +162,17 @@ public static partial class ServiceExtensions
         }
 
         var lambda = Expression.Lambda(result, serviceProvider, notification).Compile();
-        var registerMethod = typeof(ServiceExtensions).GetMethods()
+        var registerMethod = typeof(MediatorBuilder).GetMethods()
             .First(i =>
                 i.Name == registerMethodName && i.IsGenericMethod &&
-                i.GetParameters().ElementAtOrDefault(1) is {ParameterType: {IsGenericType: true} p} &&
+                i.GetParameters().FirstOrDefault() is {ParameterType: {IsGenericType: true} p} &&
                 p.GetGenericTypeDefinition() == typeof(Func<,,>));
 
         registerMethod
             .MakeGenericMethod(resultType is null
                 ? new[] { type }
                 : new[] { type, resultType })
-            .Invoke(null, new object?[] {services, lambda, ns});
+            .Invoke(this, new object?[] {lambda});
     }
 
     private static async ValueTask<TTo> CastValueTask<TFrom, TTo>(ValueTask<TFrom> result, Func<TFrom, TTo> converter)
@@ -183,7 +181,7 @@ public static partial class ServiceExtensions
     private static async ValueTask<TTo> CastTask<TFrom, TTo>(Task<TFrom> result, Func<TFrom, TTo> converter)
         => converter(await result);
 
-    private static bool CanConvertFrom(this Type to, Type from, out object converter)
+    private static bool CanConvertFrom(Type to, Type from, out object converter)
     {
         UnaryExpression BodyFunction(Expression body) => Expression.Convert(body, to);
 

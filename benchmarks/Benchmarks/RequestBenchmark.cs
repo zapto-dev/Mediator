@@ -23,8 +23,8 @@ public class RequestBenchmark
 
         services.AddMediatR(typeof(Program).Assembly);
 
-        services.AddMediator();
-        services.AddRequestHandler<Ping, string, PingHandlerZapto>();
+        var builder = services.AddMediator();
+        builder.AddRequestHandler<Ping, string, PingHandlerZapto>();
 
         var provider = services.BuildServiceProvider();
 
