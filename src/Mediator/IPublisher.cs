@@ -48,6 +48,7 @@ public interface IPublisher
     /// </summary>
     /// <param name="handler">The handler to register</param>
     /// <param name="invokeAsync">Middleware to invoke the handler</param>
+    /// <param name="queue">Queue the handler instead of invoking it immediately</param>
     /// <returns>A disposable object that can be used to unregister the handler.</returns>
-    IDisposable RegisterNotificationHandler(object handler, Func<Func<Task>, Task>? invokeAsync = null);
+    IDisposable RegisterNotificationHandler(object handler, Func<Func<Task>, Task>? invokeAsync = null, bool queue = false);
 }

@@ -20,7 +20,7 @@
     // Register the page to receive notifications
     protected override void OnInitialized()
     {
-        _dispose = Mediator.RegisterNotificationHandler(this, InvokeAsync);
+        _dispose = Mediator.RegisterNotificationHandler(this, InvokeAsync, queue: true);
     }
 
     public void Dispose()
@@ -36,10 +36,12 @@
 
     // Receive the notification
     [NotificationHandler]
-    public void HandleNotification(IncrementCountNotification notification)
+    public async Task HandleNotification(IncrementCountNotification notification)
     {
         currentCount++;
         StateHasChanged();
+
+        await Task.Delay(1000); // Simulate some work
     }
 
 }

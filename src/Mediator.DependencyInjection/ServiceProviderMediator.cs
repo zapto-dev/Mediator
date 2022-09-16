@@ -150,8 +150,24 @@ public class ServiceProviderMediator : IMediator
     }
 
     /// <inheritdoc />
-    public IDisposable RegisterNotificationHandler(object handler, Func<Func<Task>, Task>? invokeAsync = null)
+    public IDisposable RegisterNotificationHandler(object handler, Func<Func<Task>, Task>? invokeAsync = null, bool queue = false)
     {
+        if (queue)
+        {
+            if (invokeAsync is { } invoker)
+            {
+                invokeAsync = cb =>
+                {
+                    _ = Task.Run(() => invoker(cb));
+                    return Task.CompletedTask;
+                };
+            }
+            else
+            {
+                invokeAsync = Task.Run;
+            }
+        }
+
         return (IDisposable) typeof(NotificationAttributeHandler<>).MakeGenericType(handler.GetType())
             .GetMethod(nameof(NotificationAttributeHandler<object>.RegisterHandlers), BindingFlags.Static | BindingFlags.Public)!
             .Invoke(null, new[] { _provider, handler, invokeAsync });
