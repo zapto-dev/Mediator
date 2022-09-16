@@ -34,7 +34,7 @@ internal static class NotificationAttributeHandler<T>
 
     public static List<(Type, Func<T, IServiceProvider, object, CancellationToken, ValueTask>)> Handlers { get; } = new();
 
-    public static IDisposable RegisterHandlers(IServiceProvider serviceProvider, object obj)
+    public static IDisposable RegisterHandlers(IServiceProvider serviceProvider, object obj, Func<Func<Task>, Task>? middleware)
     {
         var registrations = new List<IHandlerRegistration>();
         var handler = (T)obj;
@@ -42,7 +42,7 @@ internal static class NotificationAttributeHandler<T>
         foreach (var (cacheType, invoker) in Handlers)
         {
             var cache = (INotificationCache) serviceProvider.GetRequiredService(cacheType);
-            var registration = new HandlerRegistration(cache, invoker, handler);
+            var registration = new HandlerRegistration(cache, invoker, handler, middleware);
 
             cache.Lock.Wait();
             cache.Registrations.Add(registration);
@@ -79,11 +79,16 @@ internal static class NotificationAttributeHandler<T>
     private class HandlerRegistration : IHandlerRegistration
     {
         private readonly T _handler;
+        private readonly Func<Func<Task>, Task>? _middleware;
 
-        public HandlerRegistration(INotificationCache owner, Func<T, IServiceProvider, object, CancellationToken, ValueTask> invoke, T handler)
+        public HandlerRegistration(
+            INotificationCache owner,
+            Func<T, IServiceProvider, object, CancellationToken, ValueTask> invoke, T handler,
+            Func<Func<Task>, Task>? middleware)
         {
             Invoke = invoke;
             _handler = handler;
+            _middleware = middleware;
             Owner = owner;
         }
 
@@ -95,9 +100,19 @@ internal static class NotificationAttributeHandler<T>
 
         public ValueTask InvokeAsync(IServiceProvider provider, object notification, CancellationToken cancellationToken)
         {
-            return !IsDisposed
-                ? Invoke(_handler, provider, notification, cancellationToken)
-                : default;
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            if (_middleware != null)
+            {
+                return new ValueTask(
+                    _middleware(() => !IsDisposed ? Invoke(_handler, provider, notification, cancellationToken).AsTask() : Task.CompletedTask)
+                );
+            }
+
+            return Invoke(_handler, provider, notification, cancellationToken);
         }
     }
 
