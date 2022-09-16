@@ -21,9 +21,27 @@ internal sealed class GenericNotificationRegistration
     public Type HandlerType { get; }
 }
 
-internal sealed class GenericNotificationCache<TNotification>
+internal interface IHandlerRegistration
 {
-    public Type? NotificationType { get; set; }
+    INotificationCache Owner { get; }
+
+    ValueTask InvokeAsync(IServiceProvider provider, object notification, CancellationToken cancellationToken);
+}
+
+internal interface INotificationCache
+{
+    List<IHandlerRegistration> Registrations { get; }
+
+    SemaphoreSlim Lock { get; }
+}
+
+internal sealed class GenericNotificationCache<TNotification> : INotificationCache
+{
+    public List<Type>? HandlerTypes { get; set; }
+
+    public List<IHandlerRegistration> Registrations { get; } = new();
+
+    public SemaphoreSlim Lock { get; } = new(1, 1);
 }
 
 internal sealed class GenericNotificationHandler<TNotification> : INotificationHandler<TNotification>
@@ -42,11 +60,25 @@ internal sealed class GenericNotificationHandler<TNotification> : INotificationH
 
     public async ValueTask Handle(IServiceProvider provider, TNotification notification, CancellationToken ct)
     {
-        if (_cache.NotificationType is {} cachedType)
+        if (_cache.Registrations.Count > 0)
         {
-            foreach (var handler in _serviceProvider.GetServices(cachedType))
+            await _cache.Lock.WaitAsync(ct);
+            var registrations = _cache.Registrations.ToArray();
+            _cache.Lock.Release();
+
+            foreach (var registration in registrations)
             {
-                await ((INotificationHandler<TNotification>)handler!).Handle(provider, notification, ct);
+                await registration.InvokeAsync(provider, notification, ct);
+            }
+        }
+
+        if (_cache.HandlerTypes is {} cachedTypes)
+        {
+            foreach (var cachedType in cachedTypes)
+            {
+                var handler = _serviceProvider.GetRequiredService(cachedType);
+
+                await ((INotificationHandler<TNotification>)handler).Handle(provider, notification, ct);
             }
 
             return;
@@ -61,6 +93,7 @@ internal sealed class GenericNotificationHandler<TNotification> : INotificationH
 
         var arguments = notificationType.GetGenericArguments();
         var genericType = notificationType.GetGenericTypeDefinition();
+        var handlerTypes = new List<Type>();
 
         foreach (var registration in _enumerable)
         {
@@ -70,15 +103,13 @@ internal sealed class GenericNotificationHandler<TNotification> : INotificationH
             }
 
             var type = registration.HandlerType.MakeGenericType(arguments);
+            var handler = _serviceProvider.GetRequiredService(type);
 
-            _cache.NotificationType = type;
+            await ((INotificationHandler<TNotification>)handler!).Handle(provider, notification, ct);
 
-            foreach (var handler in _serviceProvider.GetServices(type))
-            {
-                await ((INotificationHandler<TNotification>)handler!).Handle(provider, notification, ct);
-            }
-
-            break;
+            handlerTypes.Add(type);
         }
+
+        _cache.HandlerTypes = handlerTypes;
     }
 }

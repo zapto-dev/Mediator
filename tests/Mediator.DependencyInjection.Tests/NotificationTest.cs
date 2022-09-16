@@ -104,4 +104,72 @@ public class NotificationTest
 
         await mediator.Publish(ns, new Notification());
     }
+
+    [Theory]
+    [InlineData(typeof(ValueTaskNotificationHandler))]
+    [InlineData(typeof(TaskNotificationHandler))]
+    [InlineData(typeof(VoidNotificationHandler))]
+    public async Task TestTemporaryHandler(Type type)
+    {
+        var serviceProvider = new ServiceCollection()
+            .AddMediator(_ => { })
+            .BuildServiceProvider();
+
+        var handler = (ITestNotificationHandler) Activator.CreateInstance(type);
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        await mediator.Publish((object) new Notification());
+
+        Assert.Equal(0, handler.Count);
+
+        var disposable = mediator.RegisterNotificationHandler(handler);
+        await mediator.Publish((object) new Notification());
+
+        Assert.Equal(1, handler.Count);
+
+        disposable.Dispose();
+        await mediator.Publish((object) new Notification());
+
+        Assert.Equal(1, handler.Count);
+    }
+
+    public interface ITestNotificationHandler
+    {
+        int Count { get; }
+    }
+
+    public class ValueTaskNotificationHandler : ITestNotificationHandler
+    {
+        public int Count { get; private set; }
+
+        [NotificationHandler]
+        public ValueTask Handle(Notification notification)
+        {
+            Count++;
+            return default;
+        }
+    }
+
+    public class TaskNotificationHandler : ITestNotificationHandler
+    {
+        public int Count { get; private set; }
+
+        [NotificationHandler]
+        public Task Handle(Notification notification)
+        {
+            Count++;
+            return Task.CompletedTask;
+        }
+    }
+
+    public class VoidNotificationHandler : ITestNotificationHandler
+    {
+        public int Count { get; private set; }
+
+        [NotificationHandler]
+        public void Handle(Notification notification)
+        {
+            Count++;
+        }
+    }
 }

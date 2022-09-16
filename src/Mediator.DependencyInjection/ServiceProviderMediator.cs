@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -145,5 +147,13 @@ public class ServiceProviderMediator : IMediator
         {
             await factory.GetHandler(_provider).Handle(_provider, notification, cancellationToken);
         }
+    }
+
+    /// <inheritdoc />
+    public IDisposable RegisterNotificationHandler(object handler)
+    {
+        return (IDisposable) typeof(NotificationAttributeHandler<>).MakeGenericType(handler.GetType())
+            .GetMethod(nameof(NotificationAttributeHandler<object>.RegisterHandlers), BindingFlags.Static | BindingFlags.Public)!
+            .Invoke(null, new[] { _provider, handler });
     }
 }
