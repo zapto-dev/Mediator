@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -21,35 +22,45 @@ public class ServiceProviderMediator : IMediator
     }
 
     /// <inheritdoc />
-    public ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    public async ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        return RequestWrapper.Get<TResponse>(request.GetType()).Handle(request, cancellationToken, this);
+        var handler = RequestWrapper.Get<TResponse>(request.GetType());
+
+        return await handler.Handle(request, cancellationToken, this);
     }
 
-    public ValueTask<TResponse> Send<TResponse>(MediatorNamespace ns, IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    public async ValueTask<TResponse> Send<TResponse>(MediatorNamespace ns, IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        return RequestWrapper.Get<TResponse>(request.GetType()).Handle(ns, request, cancellationToken, this);
-    }
+        var handler = RequestWrapper.Get<TResponse>(request.GetType());
 
-    /// <inheritdoc />
-    public ValueTask<object?> Send(object request, CancellationToken cancellationToken = default)
-    {
-        return RequestWrapper.Get(request.GetType()).Handle(request, cancellationToken, this);
-    }
-
-    public ValueTask<object?> Send(MediatorNamespace ns, object request, CancellationToken cancellationToken = default)
-    {
-        return RequestWrapper.Get(request.GetType()).Handle(ns, request, cancellationToken, this);
+        return await handler.Handle(ns, request, cancellationToken, this);
     }
 
     /// <inheritdoc />
-    public ValueTask<TResponse> Send<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default) where TRequest : IRequest<TResponse>
+    public async ValueTask<object?> Send(object request, CancellationToken cancellationToken = default)
     {
-        return _provider.GetRequiredService<IRequestHandler<TRequest, TResponse>>().Handle(_provider, request, cancellationToken);
+        var handler = RequestWrapper.Get(request.GetType());
+
+        return await handler.Handle(request, cancellationToken, this);
+    }
+
+    public async ValueTask<object?> Send(MediatorNamespace ns, object request, CancellationToken cancellationToken = default)
+    {
+        var handler = RequestWrapper.Get(request.GetType());
+
+        return await handler.Handle(ns, request, cancellationToken, this);
     }
 
     /// <inheritdoc />
-    public ValueTask<TResponse> Send<TRequest, TResponse>(MediatorNamespace ns, TRequest request, CancellationToken cancellationToken = default)
+    public async ValueTask<TResponse> Send<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default) where TRequest : IRequest<TResponse>
+    {
+        var handler = _provider.GetRequiredService<IRequestHandler<TRequest, TResponse>>();
+
+        return await handler.Handle(_provider, request, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<TResponse> Send<TRequest, TResponse>(MediatorNamespace ns, TRequest request, CancellationToken cancellationToken = default)
         where TRequest : IRequest<TResponse>
     {
         var services = _provider
@@ -61,7 +72,9 @@ public class ServiceProviderMediator : IMediator
             throw new InvalidOperationException();
         }
 
-        return services.GetHandler(_provider).Handle(_provider, request, cancellationToken);
+        var handler = services.GetHandler(_provider);
+
+        return await handler.Handle(_provider, request, cancellationToken);
     }
 
     public IAsyncEnumerable<TResponse> CreateStream<TResponse>(MediatorNamespace ns, IStreamRequest<TResponse> request,

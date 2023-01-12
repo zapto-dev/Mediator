@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -151,19 +152,18 @@ public class SenderGenerator : IIncrementalGenerator
             }
         }
 
-        bool TryAppendVisibility(Accessibility visibility)
+        bool TryGetVisibility(Accessibility visibility, [NotNullWhen(true)] out string? value)
         {
             switch (visibility)
             {
                 case Accessibility.Internal:
-                    AppendIntend();
-                    sb.Append("internal ");
+                    value = "internal";
                     return true;
                 case Accessibility.Public:
-                    AppendIntend();
-                    sb.Append("public ");
+                    value = "public";
                     return true;
                 default:
+                    value = null;
                     return false;
             }
         }
@@ -382,9 +382,12 @@ public class SenderGenerator : IIncrementalGenerator
                         }
                     }
                     
-                    if (TryAppendVisibility(request.Type.DeclaredAccessibility))
+                    if (TryGetVisibility(request.Type.DeclaredAccessibility, out var visibilityValue))
                     {
-                        sb.Append("static ");
+                        AppendIntend();
+                        sb.Append("[global::System.Diagnostics.DebuggerStepThrough] ");
+                        sb.Append(visibilityValue);
+                        sb.Append(" static ");
                         sb.AppendType(method.ReturnType,
                             addNullable: false,
                             middleware: t =>
@@ -445,12 +448,15 @@ public class SenderGenerator : IIncrementalGenerator
 
                         var visibility = constructor.DeclaredAccessibility.GetLowest(request.Accessibility);
 
-                        if (!TryAppendVisibility(visibility))
+                        if (!TryGetVisibility(visibility, out visibilityValue))
                         {
                             continue;
                         }
 
-                        sb.Append("static ");
+                        AppendIntend();
+                        sb.Append("[global::System.Diagnostics.DebuggerStepThrough] ");
+                        sb.Append(visibilityValue);
+                        sb.Append(" static ");
                         sb.AppendType(method.ReturnType,
                             addNullable: false,
                             middleware: t =>
