@@ -1,11 +1,11 @@
 <Project>
 
     <PropertyGroup>
-        <Version>1.0.0-alpha.7</Version>
-        <PackageVersion>1.0.0-alpha.7</PackageVersion>
+        <Version>1.0.0-alpha.8</Version>
+        <PackageVersion>1.0.0-alpha.8</PackageVersion>
         <Authors>Zapto</Authors>
         <RepositoryUrl>https://github.com/zapto-dev/Mediator</RepositoryUrl>
-        <Copyright>Copyright © 2022 Zapto</Copyright>
+        <Copyright>Copyright © 2023 Zapto</Copyright>
         <PackageTags>zapto, mediator</PackageTags>
         <PackageProjectUrl>https://github.com/zapto-dev/Mediator</PackageProjectUrl>
         <PackageLicenseUrl>https://github.com/zapto-dev/Mediator/blob/main/LICENSE</PackageLicenseUrl>

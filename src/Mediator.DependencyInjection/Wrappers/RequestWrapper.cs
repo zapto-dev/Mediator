@@ -27,7 +27,7 @@ internal static class RequestWrapper
 
     public static IRequestWrapper Get(Type type)
     {
-        return RequestHandlers.GetOrAdd(type, t =>
+        return RequestHandlers.GetOrAdd(type, static t =>
         {
             var interfaceType = t.GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequest<>));
 
@@ -38,7 +38,7 @@ internal static class RequestWrapper
 
             var responseType = interfaceType.GetGenericArguments().First();
 
-            return (IRequestWrapper)Activator.CreateInstance(typeof(RequestWrapper<,>).MakeGenericType(type, responseType));
+            return (IRequestWrapper)Activator.CreateInstance(typeof(RequestWrapper<,>).MakeGenericType(t, responseType));
         });
     }
 

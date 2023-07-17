@@ -19,7 +19,7 @@ internal static class NotificationWrapper
 
     public static INotificationWrapper Get(Type type)
     {
-        return NotificationHandlers.GetOrAdd(type, t => (INotificationWrapper)Activator.CreateInstance(typeof(NotificationWrapper<>).MakeGenericType(t)));
+        return NotificationHandlers.GetOrAdd(type, static t => (INotificationWrapper)Activator.CreateInstance(typeof(NotificationWrapper<>).MakeGenericType(t)));
     }
 }
 

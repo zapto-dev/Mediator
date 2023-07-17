@@ -70,6 +70,12 @@ public interface IMediatorBuilder
 
     IMediatorBuilder AddNotificationHandler(Delegate handler);
 
+    IMediatorBuilder AddStreamRequestHandler(Type type);
+
+    IMediatorBuilder AddStreamRequestHandler<THandler>() where THandler : IStreamRequestHandler;
+
+    IMediatorBuilder AddStreamRequestHandler(Type requestType, Type? responseType, Type handlerType);
+
     IMediatorBuilder AddStreamRequestHandler<TRequest, TResponse, THandler>()
         where TRequest : IStreamRequest<TResponse>
         where THandler : class, IStreamRequestHandler<TRequest, TResponse>;

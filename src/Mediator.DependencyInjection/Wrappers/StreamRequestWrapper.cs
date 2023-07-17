@@ -29,7 +29,7 @@ internal static class StreamRequestWrapper
 
     public static IStreamRequestWrapper Get(Type type)
     {
-        return StreamRequestHandlers.GetOrAdd(type, t =>
+        return StreamRequestHandlers.GetOrAdd(type, static t =>
         {
             var interfaceType = t.GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IStreamRequest<>));
 
@@ -40,7 +40,7 @@ internal static class StreamRequestWrapper
 
             var responseType = interfaceType.GetGenericArguments().First();
 
-            return (IStreamRequestWrapper)Activator.CreateInstance(typeof(StreamRequestWrapper<,>).MakeGenericType(type, responseType));
+            return (IStreamRequestWrapper)Activator.CreateInstance(typeof(StreamRequestWrapper<,>).MakeGenericType(t, responseType));
         });
     }
 
