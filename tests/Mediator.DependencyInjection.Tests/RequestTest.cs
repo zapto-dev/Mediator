@@ -109,4 +109,30 @@ public class RequestTest
 
         Assert.Equal(0, result.Count);
     }
+
+    [Fact]
+    public async Task TestNoHandler()
+    {
+        var serviceProvider = new ServiceCollection()
+            .AddMediator(_ => {})
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        await Assert.ThrowsAsync<HandlerNotFoundException>(() => mediator.Send<Request, int>(new Request()).AsTask());
+    }
+
+    [Fact]
+    public async Task TestNoHandlerNamespace()
+    {
+        var ns = new MediatorNamespace("test");
+
+        var serviceProvider = new ServiceCollection()
+            .AddMediator(_ => {})
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        await Assert.ThrowsAsync<NamespaceHandlerNotFoundException>(() => mediator.Send<Request, int>(ns, new Request()).AsTask());
+    }
 }

@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 
 namespace Zapto.Mediator;
 
-public class HandlerNotFoundException : Exception
+public class HandlerNotFoundException : InvalidOperationException
 {
 	public HandlerNotFoundException()
 	{

@@ -119,13 +119,19 @@ public interface IMediatorBuilder
     public IMediatorBuilder AddStreamRequestHandler<TRequest, TResponse>(Func<IServiceProvider, TRequest, IAsyncEnumerable<TResponse>> handler)
         where TRequest : IStreamRequest<TResponse>;
 
+    IMediatorBuilder AddDefaultRequestHandler(IDefaultRequestHandler handler);
+
     IMediatorBuilder AddDefaultRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
     IMediatorBuilder AddDefaultRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : class, IDefaultRequestHandler;
 
+    IMediatorBuilder AddDefaultNotificationHandler(IDefaultNotificationHandler handler);
+
     IMediatorBuilder AddDefaultNotificationHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
     IMediatorBuilder AddDefaultNotificationHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : class, IDefaultNotificationHandler;
+
+    IMediatorBuilder AddDefaultStreamRequestHandler(IDefaultStreamRequestHandler handler);
 
     IMediatorBuilder AddDefaultStreamRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 

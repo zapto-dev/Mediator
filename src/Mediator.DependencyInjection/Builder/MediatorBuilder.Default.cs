@@ -6,6 +6,12 @@ namespace Zapto.Mediator;
 
 public partial class MediatorBuilder : IMediatorBuilder
 {
+	public IMediatorBuilder AddDefaultRequestHandler(IDefaultRequestHandler handler)
+	{
+		_services.AddSingleton(handler);
+		return this;
+	}
+
 	public IMediatorBuilder AddDefaultRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient)
 	{
 		_services.Add(new ServiceDescriptor(typeof(IDefaultRequestHandler), handlerType, GetLifetime(scope)));
@@ -18,6 +24,12 @@ public partial class MediatorBuilder : IMediatorBuilder
 		return this;
 	}
 
+	public IMediatorBuilder AddDefaultNotificationHandler(IDefaultNotificationHandler handler)
+	{
+		_services.AddSingleton(handler);
+		return this;
+	}
+
 	public IMediatorBuilder AddDefaultNotificationHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient)
 	{
 		_services.Add(new ServiceDescriptor(typeof(IDefaultNotificationHandler), handlerType, GetLifetime(scope)));
@@ -27,6 +39,12 @@ public partial class MediatorBuilder : IMediatorBuilder
 	public IMediatorBuilder AddDefaultNotificationHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : class, IDefaultNotificationHandler
 	{
 		_services.Add(new ServiceDescriptor(typeof(IDefaultNotificationHandler), typeof(THandler), GetLifetime(scope)));
+		return this;
+	}
+
+	public IMediatorBuilder AddDefaultStreamRequestHandler(IDefaultStreamRequestHandler handler)
+	{
+		_services.AddSingleton(handler);
 		return this;
 	}
 
