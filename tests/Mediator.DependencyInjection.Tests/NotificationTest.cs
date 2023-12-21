@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Zapto.Mediator;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
+using NSubstitute;
 using Xunit;
 
 namespace Mediator.DependencyInjection.Tests;
@@ -16,13 +16,13 @@ public class NotificationTest
     [Fact]
     public async Task TestNotification()
     {
-        var handler = new Mock<INotificationHandler<Notification>>();
+        var handler = Substitute.For<INotificationHandler<Notification>>();
 
         var serviceProvider = new ServiceCollection()
             .AddMediator(b =>
             {
-                b.AddNotificationHandler(handler.Object);
-                b.AddNotificationHandler(handler.Object);
+                b.AddNotificationHandler(handler);
+                b.AddNotificationHandler(handler);
             })
             .BuildServiceProvider();
 
@@ -30,19 +30,19 @@ public class NotificationTest
 
         await mediator.Publish(new Notification());
 
-        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _ = handler.Received(2).Handle(Arg.Any<IServiceProvider>(), Arg.Any<Notification>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task TestNotificationObject()
     {
-        var handler = new Mock<INotificationHandler<Notification>>();
+        var handler = Substitute.For<INotificationHandler<Notification>>();
 
         var serviceProvider = new ServiceCollection()
             .AddMediator(b =>
             {
-                b.AddNotificationHandler(handler.Object);
-                b.AddNotificationHandler(handler.Object);
+                b.AddNotificationHandler(handler);
+                b.AddNotificationHandler(handler);
             })
             .BuildServiceProvider();
 
@@ -50,24 +50,24 @@ public class NotificationTest
 
         await mediator.Publish((object) new Notification());
 
-        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _ = handler.Received(2).Handle(Arg.Any<IServiceProvider>(), Arg.Any<Notification>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task TestNamespaceNotification()
     {
         var ns = new MediatorNamespace("test");
-        var handler = new Mock<INotificationHandler<Notification>>();
+        var handler = Substitute.For<INotificationHandler<Notification>>();
 
         var serviceProvider = new ServiceCollection()
             .AddMediator(b =>
             {
-                b.AddNotificationHandler(handler.Object);
-                b.AddNotificationHandler(handler.Object);
+                b.AddNotificationHandler(handler);
+                b.AddNotificationHandler(handler);
 
                 b.AddNamespace(ns)
-                    .AddNotificationHandler(handler.Object)
-                    .AddNotificationHandler(handler.Object);
+                    .AddNotificationHandler(handler)
+                    .AddNotificationHandler(handler);
             })
             .BuildServiceProvider();
 
@@ -76,7 +76,8 @@ public class NotificationTest
         await mediator.Publish(new Notification());
         await mediator.Publish(ns, new Notification());
 
-        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Exactly(4));
+        _ = handler.Received(requiredNumberOfCalls: 4)
+            .Handle(Arg.Any<IServiceProvider>(), Arg.Any<Notification>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -115,7 +116,7 @@ public class NotificationTest
             .AddMediator(_ => { })
             .BuildServiceProvider();
 
-        var handler = (ITestNotificationHandler) Activator.CreateInstance(type);
+        var handler = (ITestNotificationHandler) Activator.CreateInstance(type)!;
         var mediator = serviceProvider.GetRequiredService<IMediator>();
 
         await mediator.Publish((object) new Notification());

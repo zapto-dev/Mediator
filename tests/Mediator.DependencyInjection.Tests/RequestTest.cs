@@ -1,12 +1,12 @@
+                        
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Zapto.Mediator;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
+using NSubstitute;
 using Xunit;
 
 namespace Mediator.DependencyInjection.Tests;
@@ -26,62 +26,65 @@ public class RequestTest
     [Fact]
     public async Task TestRequest()
     {
-        var handler = new Mock<IRequestHandler<Request, int>>();
+        var handler = Substitute.For<IRequestHandler<Request, int>>();
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator(b => b.AddRequestHandler(handler.Object))
+            .AddMediator(b => b.AddRequestHandler(handler))
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
 
         await mediator.Send<Request, int>(new Request());
 
-        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
+        _ = handler.Received()
+            .Handle(Arg.Any<IServiceProvider>(), Arg.Any<Request>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task TestRequestInterface()
     {
-        var handler = new Mock<IRequestHandler<Request, int>>();
+        var handler = Substitute.For<IRequestHandler<Request, int>>();
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator(b => b.AddRequestHandler(handler.Object))
+            .AddMediator(b => b.AddRequestHandler(handler))
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
 
         await mediator.Send(new Request());
 
-        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
+        _ = handler.Received()
+            .Handle(Arg.Any<IServiceProvider>(), Arg.Any<Request>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task TestRequestObject()
     {
-        var handler = new Mock<IRequestHandler<Request, int>>();
+        var handler = Substitute.For<IRequestHandler<Request, int>>();
 
         var serviceProvider = new ServiceCollection()
-            .AddMediator(b => b.AddRequestHandler(handler.Object))
+            .AddMediator(b => b.AddRequestHandler(handler))
             .BuildServiceProvider();
 
         var mediator = serviceProvider.GetRequiredService<IMediator>();
 
         await mediator.Send((object)new Request());
 
-        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
+        _ = handler.Received()
+            .Handle(Arg.Any<IServiceProvider>(), Arg.Any<Request>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task TestNamespaceRequest()
     {
         var ns = new MediatorNamespace("test");
-        var handler = new Mock<IRequestHandler<Request, int>>();
+        var handler = Substitute.For<IRequestHandler<Request, int>>();
 
         var serviceProvider = new ServiceCollection()
             .AddMediator(b =>
             {
-                b.AddRequestHandler(handler.Object);
-                b.AddNamespace(ns).AddRequestHandler(handler.Object);
+                b.AddRequestHandler(handler);
+                b.AddNamespace(ns).AddRequestHandler(handler);
             })
             .BuildServiceProvider();
 
@@ -90,7 +93,8 @@ public class RequestTest
         await mediator.Send<Request, int>(new Request());
         await mediator.Send<Request, int>(ns, new Request());
 
-        handler.Verify(x => x.Handle(It.IsAny<IServiceProvider>(), It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _ = handler.Received(requiredNumberOfCalls: 2)
+            .Handle(Arg.Any<IServiceProvider>(), Arg.Any<Request>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
