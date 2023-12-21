@@ -35,12 +35,18 @@ internal sealed class GenericStreamRequestHandler<TRequest, TResponse> : IStream
     private readonly GenericStreamRequestCache<TRequest, TResponse> _cache;
     private readonly IEnumerable<GenericStreamRequestRegistration> _enumerable;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IDefaultStreamRequestHandler? _defaultHandler;
 
-    public GenericStreamRequestHandler(IEnumerable<GenericStreamRequestRegistration> enumerable, IServiceProvider serviceProvider, GenericStreamRequestCache<TRequest, TResponse> cache)
+    public GenericStreamRequestHandler(
+        IEnumerable<GenericStreamRequestRegistration> enumerable,
+        IServiceProvider serviceProvider,
+        GenericStreamRequestCache<TRequest, TResponse> cache,
+        IDefaultStreamRequestHandler? defaultHandler = null)
     {
         _enumerable = enumerable;
         _serviceProvider = serviceProvider;
         _cache = cache;
+        _defaultHandler = defaultHandler;
     }
 
     public IAsyncEnumerable<TResponse> Handle(IServiceProvider provider, TRequest request, CancellationToken ct)
@@ -57,7 +63,12 @@ internal sealed class GenericStreamRequestHandler<TRequest, TResponse> : IStream
 
         if (!requestType.IsGenericType)
         {
-            throw new InvalidCastException($"No handler found for request type {requestType.FullName}.");
+            if (_defaultHandler is null)
+            {
+                throw new HandlerNotFoundException($"No handler found for request type {requestType.FullName}.");
+            }
+
+            return _defaultHandler.Handle<TRequest, TResponse>(provider, request, ct);
         }
 
         var arguments = requestType.GetGenericArguments();
@@ -85,6 +96,11 @@ internal sealed class GenericStreamRequestHandler<TRequest, TResponse> : IStream
             return handler.Handle(provider, request, ct);
         }
 
-        throw new InvalidCastException($"No handler found for request type {requestType.FullName}.");
+        if (_defaultHandler is null)
+        {
+            throw new HandlerNotFoundException($"No handler found for request type {requestType.FullName}.");
+        }
+
+        return _defaultHandler.Handle<TRequest, TResponse>(provider, request, ct);
     }
 }

@@ -1,6 +1,3 @@
 ﻿namespace Zapto.Mediator;
 
-public interface IMediator : IPublisher, ISender
-{
-    
-}
+public interface IMediator : IPublisher, ISender;

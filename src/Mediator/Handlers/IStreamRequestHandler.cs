@@ -5,10 +5,7 @@ using MediatR;
 
 namespace Zapto.Mediator;
 
-public interface IStreamRequestHandler
-{
-
-}
+public interface IStreamRequestHandler;
 
 /// <summary>
 /// Defines a handler for a stream request using IAsyncEnumerable as return type.

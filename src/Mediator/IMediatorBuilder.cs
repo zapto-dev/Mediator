@@ -89,4 +89,16 @@ public interface IMediatorBuilder
 
     public IMediatorBuilder AddStreamRequestHandler<TRequest, TResponse>(Func<IServiceProvider, TRequest, IAsyncEnumerable<TResponse>> handler)
         where TRequest : IStreamRequest<TResponse>;
+
+    IMediatorBuilder AddDefaultRequestHandler(Type handlerType);
+
+    IMediatorBuilder AddDefaultRequestHandler<THandler>() where THandler : class, IDefaultRequestHandler;
+
+    IMediatorBuilder AddDefaultNotificationHandler(Type handlerType);
+
+    IMediatorBuilder AddDefaultNotificationHandler<THandler>() where THandler : class, IDefaultNotificationHandler;
+
+    IMediatorBuilder AddDefaultStreamRequestHandler(Type handlerType);
+
+    IMediatorBuilder AddDefaultStreamRequestHandler<THandler>() where THandler : class, IDefaultStreamRequestHandler;
 }

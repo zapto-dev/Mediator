@@ -7,7 +7,4 @@ namespace Zapto.Mediator;
 /// The class should be registered with <see cref="IPublisher.RegisterNotificationHandler"/>.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
-public class NotificationHandlerAttribute : Attribute
-{
-    
-}
+public class NotificationHandlerAttribute : Attribute;

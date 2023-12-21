@@ -3,7 +3,4 @@
 namespace Zapto.Mediator;
 
 [AttributeUsage(AttributeTargets.Class)]
-public class IgnoreHandlerAttribute : Attribute
-{
-    
-}
+public class IgnoreHandlerAttribute : Attribute;

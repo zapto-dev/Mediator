@@ -22,59 +22,107 @@ public class ServiceProviderMediator : IMediator
     }
 
     /// <inheritdoc />
-    public async ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    public ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         var handler = RequestWrapper.Get<TResponse>(request.GetType());
 
-        return await handler.Handle(request, cancellationToken, this);
+        return handler.Handle(request, cancellationToken, this);
     }
 
-    public async ValueTask<TResponse> Send<TResponse>(MediatorNamespace ns, IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    public ValueTask<TResponse> Send<TResponse>(MediatorNamespace ns, IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         var handler = RequestWrapper.Get<TResponse>(request.GetType());
 
-        return await handler.Handle(ns, request, cancellationToken, this);
+        return handler.Handle(ns, request, cancellationToken, this);
     }
 
     /// <inheritdoc />
-    public async ValueTask<object?> Send(object request, CancellationToken cancellationToken = default)
+    public ValueTask<object?> Send(object request, CancellationToken cancellationToken = default)
     {
         var handler = RequestWrapper.Get(request.GetType());
 
-        return await handler.Handle(request, cancellationToken, this);
+        return handler.Handle(request, cancellationToken, this);
     }
 
-    public async ValueTask<object?> Send(MediatorNamespace ns, object request, CancellationToken cancellationToken = default)
+    public ValueTask<object?> Send(MediatorNamespace ns, object request, CancellationToken cancellationToken = default)
     {
         var handler = RequestWrapper.Get(request.GetType());
 
-        return await handler.Handle(ns, request, cancellationToken, this);
+        return handler.Handle(ns, request, cancellationToken, this);
     }
 
     /// <inheritdoc />
-    public async ValueTask<TResponse> Send<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default) where TRequest : IRequest<TResponse>
+    public ValueTask<TResponse> Send<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default) where TRequest : IRequest<TResponse>
     {
         var handler = _provider.GetRequiredService<IRequestHandler<TRequest, TResponse>>();
+        var pipeline = _provider.GetServices<IPipelineBehavior<TRequest, TResponse>>();
 
-        return await handler.Handle(_provider, request, cancellationToken);
+        return pipeline is IPipelineBehavior<TRequest, TResponse>[] array
+            ? SendWithPipelineArray(request, array, handler, cancellationToken)
+            : SendWithPipelineEnumerable(request, handler, pipeline, cancellationToken);
     }
 
     /// <inheritdoc />
     public async ValueTask<TResponse> Send<TRequest, TResponse>(MediatorNamespace ns, TRequest request, CancellationToken cancellationToken = default)
         where TRequest : IRequest<TResponse>
     {
-        var services = _provider
+        var namespaceHandler = _provider
             .GetServices<INamespaceRequestHandler<TRequest, TResponse>>()
             .FirstOrDefault(i => i.Namespace == ns);
 
-        if (services == null)
+        if (namespaceHandler == null)
         {
-            throw new InvalidOperationException();
+            throw new NamespaceHandlerNotFoundException();
         }
 
-        var handler = services.GetHandler(_provider);
+        var pipeline = _provider.GetServices<IPipelineBehavior<TRequest, TResponse>>();
+        var handler = namespaceHandler.GetHandler(_provider);
 
-        return await handler.Handle(_provider, request, cancellationToken);
+        return pipeline is IPipelineBehavior<TRequest, TResponse>[] array
+            ? await SendWithPipelineArray(request, array, handler, cancellationToken)
+            : await SendWithPipelineEnumerable(request, handler, pipeline, cancellationToken);
+    }
+
+    private ValueTask<TResponse> SendWithPipelineArray<TRequest, TResponse>(
+        TRequest request,
+        IPipelineBehavior<TRequest, TResponse>[] array,
+        IRequestHandler<TRequest, TResponse> handler,
+        CancellationToken cancellationToken
+    ) where TRequest : IRequest<TResponse>
+    {
+        if (array.Length == 0)
+        {
+            return handler.Handle(_provider, request, cancellationToken);
+        }
+
+        RequestHandlerDelegate<TResponse> next = () => handler.Handle(_provider, request, cancellationToken);
+
+        for (var i = array.Length - 1; i >= 0; i--)
+        {
+            var pipelineBehavior = array[i];
+            var nextPipeline = next;
+            next = () => pipelineBehavior.Handle(request, nextPipeline, cancellationToken);
+        }
+
+        return next();
+    }
+
+    private ValueTask<TResponse> SendWithPipelineEnumerable<TRequest, TResponse>(
+        TRequest request,
+        IRequestHandler<TRequest, TResponse> handler,
+        IEnumerable<IPipelineBehavior<TRequest, TResponse>> pipeline,
+        CancellationToken cancellationToken
+    ) where TRequest : IRequest<TResponse>
+    {
+        RequestHandlerDelegate<TResponse> next = () => handler.Handle(_provider, request, cancellationToken);
+
+        foreach (var pipelineBehavior in pipeline.Reverse())
+        {
+            var nextPipeline = next;
+            next = () => pipelineBehavior.Handle(request, nextPipeline, cancellationToken);
+        }
+
+        return next();
     }
 
     public IAsyncEnumerable<TResponse> CreateStream<TResponse>(MediatorNamespace ns, IStreamRequest<TResponse> request,
@@ -104,23 +152,75 @@ public class ServiceProviderMediator : IMediator
     public IAsyncEnumerable<TResponse> CreateStream<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
         where TRequest : IStreamRequest<TResponse>
     {
-        return _provider.GetRequiredService<IStreamRequestHandler<TRequest, TResponse>>().Handle(_provider, request, cancellationToken);
+        var handler = _provider.GetRequiredService<IStreamRequestHandler<TRequest, TResponse>>();
+        var pipeline = _provider.GetServices<IStreamPipelineBehavior<TRequest, TResponse>>();
+
+        return pipeline is IStreamPipelineBehavior<TRequest, TResponse>[] array
+            ? CreateStreamWithPipelineArray(request, array, handler, cancellationToken)
+            : CreateStreamWithPipelineEnumerable(request, handler, pipeline, cancellationToken);
     }
 
     /// <inheritdoc />
     public IAsyncEnumerable<TResponse> CreateStream<TRequest, TResponse>(MediatorNamespace ns, TRequest request,
         CancellationToken cancellationToken = default) where TRequest : IStreamRequest<TResponse>
     {
-        var services = _provider
+        var namespaceHandler = _provider
             .GetServices<INamespaceStreamRequestHandler<TRequest, TResponse>>()
             .FirstOrDefault(i => i.Namespace == ns);
 
-        if (services == null)
+        if (namespaceHandler == null)
         {
-            throw new InvalidOperationException();
+            throw new NamespaceHandlerNotFoundException();
         }
 
-        return services.GetHandler(_provider).Handle(_provider, request, cancellationToken);
+        var handler = namespaceHandler.GetHandler(_provider);
+        var pipeline = _provider.GetServices<IStreamPipelineBehavior<TRequest, TResponse>>();
+
+        return pipeline is IStreamPipelineBehavior<TRequest, TResponse>[] array
+            ? CreateStreamWithPipelineArray(request, array, handler, cancellationToken)
+            : CreateStreamWithPipelineEnumerable(request, handler, pipeline, cancellationToken);
+    }
+
+    private IAsyncEnumerable<TResponse> CreateStreamWithPipelineArray<TRequest, TResponse>(
+        TRequest request,
+        IStreamPipelineBehavior<TRequest, TResponse>[] array,
+        IStreamRequestHandler<TRequest, TResponse> handler,
+        CancellationToken cancellationToken
+    ) where TRequest : IStreamRequest<TResponse>
+    {
+        if (array.Length == 0)
+        {
+            return handler.Handle(_provider, request, cancellationToken);
+        }
+
+        StreamHandlerDelegate<TResponse> next = () => handler.Handle(_provider, request, cancellationToken);
+
+        for (var i = array.Length - 1; i >= 0; i--)
+        {
+            var pipelineBehavior = array[i];
+            var nextPipeline = next;
+            next = () => pipelineBehavior.Handle(request, nextPipeline, cancellationToken);
+        }
+
+        return next();
+    }
+
+    private IAsyncEnumerable<TResponse> CreateStreamWithPipelineEnumerable<TRequest, TResponse>(
+        TRequest request,
+        IStreamRequestHandler<TRequest, TResponse> handler,
+        IEnumerable<IStreamPipelineBehavior<TRequest, TResponse>> pipeline,
+        CancellationToken cancellationToken
+    ) where TRequest : IStreamRequest<TResponse>
+    {
+        StreamHandlerDelegate<TResponse> next = () => handler.Handle(_provider, request, cancellationToken);
+
+        foreach (var pipelineBehavior in pipeline.Reverse())
+        {
+            var nextPipeline = next;
+            next = () => pipelineBehavior.Handle(request, nextPipeline, cancellationToken);
+        }
+
+        return next();
     }
 
     /// <inheritdoc />
@@ -138,14 +238,22 @@ public class ServiceProviderMediator : IMediator
     public async ValueTask Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
         where TNotification : INotification
     {
+        var didHandle = false;
+
         foreach (var handler in _provider.GetServices<INotificationHandler<TNotification>>())
         {
             await handler.Handle(_provider, notification, cancellationToken);
+            didHandle = true;
         }
 
-        await _provider
+        var didGenericHandle = await _provider
             .GetRequiredService<GenericNotificationHandler<TNotification>>()
             .Handle(_provider, notification, cancellationToken);
+
+        if (!didHandle && !didGenericHandle && _provider.GetService<IDefaultNotificationHandler>() is { } defaultHandler)
+        {
+            await defaultHandler.Handle(_provider, notification, cancellationToken);
+        }
     }
 
     /// <inheritdoc />

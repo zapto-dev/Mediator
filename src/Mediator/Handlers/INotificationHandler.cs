@@ -5,9 +5,7 @@ using MediatR;
 
 namespace Zapto.Mediator;
 
-public interface INotificationHandler
-{
-}
+public interface INotificationHandler;
 
 /// <summary>
 /// Defines a handler for a notification
