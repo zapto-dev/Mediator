@@ -38,7 +38,7 @@ public interface IRequestHandler<in TRequest> : IRequestHandler<TRequest, Unit>
 /// </summary>
 /// <typeparam name="TRequest">The type of request being handled</typeparam>
 public abstract class AsyncRequestHandler<TRequest> : IRequestHandler<TRequest>
-    where TRequest : IRequest
+    where TRequest : IRequest<Unit>
 {
     async ValueTask<Unit> IRequestHandler<TRequest, Unit>.Handle(IServiceProvider provider, TRequest request, CancellationToken cancellationToken)
     {
@@ -82,7 +82,7 @@ public abstract class RequestHandler<TRequest, TResponse> : IRequestHandler<TReq
 /// </summary>
 /// <typeparam name="TRequest">The type of request being handled</typeparam>
 public abstract class RequestHandler<TRequest> : IRequestHandler<TRequest>
-    where TRequest : IRequest
+    where TRequest : IRequest<Unit>
 {
     ValueTask<Unit> IRequestHandler<TRequest, Unit>.Handle(IServiceProvider provider, TRequest request,
         CancellationToken cancellationToken)
