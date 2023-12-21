@@ -163,7 +163,7 @@ public class ServiceProviderMediator : IMediator
     }
 
     /// <inheritdoc />
-    public IDisposable RegisterNotificationHandler(object handler, Func<Func<Task>, Task>? invokeAsync = null, bool queue = false)
+    public IDisposable RegisterNotificationHandler(object handler, Func<Func<Task>, Task>? invokeAsync = null, bool queue = true)
     {
         if (queue)
         {

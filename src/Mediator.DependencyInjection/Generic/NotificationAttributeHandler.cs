@@ -83,7 +83,8 @@ internal static class NotificationAttributeHandler<T>
 
         public HandlerRegistration(
             INotificationCache owner,
-            Func<T, IServiceProvider, object, CancellationToken, ValueTask> invoke, T handler,
+            Func<T, IServiceProvider, object, CancellationToken, ValueTask> invoke,
+            T handler,
             Func<Func<Task>, Task>? middleware)
         {
             Invoke = invoke;

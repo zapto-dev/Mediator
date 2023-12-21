@@ -65,7 +65,7 @@ internal sealed class StreamRequestWrapper<TRequest, TResponse> : IStreamRequest
 
     async IAsyncEnumerable<object?> IStreamRequestWrapper.Handle(MediatorNamespace ns, object streamRequest, CancellationToken cancellationToken, IMediator mediator)
     {
-        await foreach(var response in Handle(ns, (TRequest)streamRequest, cancellationToken, mediator))
+        await foreach(var response in Handle(ns, streamRequest, cancellationToken, mediator))
         {
             yield return response;
         }
@@ -73,7 +73,7 @@ internal sealed class StreamRequestWrapper<TRequest, TResponse> : IStreamRequest
 
     async IAsyncEnumerable<object?> IStreamRequestWrapper.Handle(object streamRequest, CancellationToken cancellationToken, IMediator mediator)
     {
-        await foreach(var response in Handle((TRequest)streamRequest, cancellationToken, mediator))
+        await foreach(var response in Handle(streamRequest, cancellationToken, mediator))
         {
             yield return response;
         }

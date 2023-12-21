@@ -15,29 +15,21 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: | 
-            3.1.x
             6.0.x
+            7.0.x
+            8.0.x
       - name: Install dependencies
         run: dotnet restore
       - name: Build
         run: dotnet build --configuration Release --no-restore
       - name: Test Mediator.SourceGenerator
         run: dotnet test --no-restore --verbosity normal tests/Mediator.SourceGenerator.Tests/Mediator.SourceGenerator.Tests.csproj
-      - name: Publish Mediator
-        uses: alirezanet/publish-nuget@v3.0.4
+      - name: Publish
+        uses: GerardSmit/publish-nuget@v3.1.2
         with:
-          VERSION_FILE_PATH: src/Directory.Build.props
-          PROJECT_FILE_PATH: src/Mediator/Mediator.csproj
           NUGET_KEY: ${{secrets.NUGET_API_KEY}}
-      - name: Publish Mediator.DependencyInjection
-        uses: alirezanet/publish-nuget@v3.0.4
-        with:
           VERSION_FILE_PATH: src/Directory.Build.props
-          PROJECT_FILE_PATH: src/Mediator.DependencyInjection/Mediator.DependencyInjection.csproj
-          NUGET_KEY: ${{secrets.NUGET_API_KEY}}
-      - name: Publish Mediator.SourceGenerator
-        uses: alirezanet/publish-nuget@v3.0.4
-        with:
-          VERSION_FILE_PATH: src/Directory.Build.props
-          PROJECT_FILE_PATH: src/Mediator.SourceGenerator/Mediator.SourceGenerator.csproj
-          NUGET_KEY: ${{secrets.NUGET_API_KEY}}
+          PROJECT_FILE_PATH: |
+            src/Mediator/Mediator.csproj
+            src/Mediator.DependencyInjection/Mediator.DependencyInjection.csproj
+            src/Mediator.SourceGenerator/Mediator.SourceGenerator.csproj
