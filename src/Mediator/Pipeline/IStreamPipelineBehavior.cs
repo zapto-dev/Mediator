@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace Zapto.Mediator;
@@ -21,9 +22,10 @@ public interface IStreamPipelineBehavior<in TRequest, TResponse> where TRequest 
 	/// <summary>
 	/// Stream Pipeline handler. Perform any additional behavior and iterate the <paramref name="next"/> delegate as necessary
 	/// </summary>
+	/// <param name="provider">Service provider</param>
 	/// <param name="request">Incoming request</param>
 	/// <param name="next">Awaitable delegate for the next action in the pipeline. Eventually this delegate represents the handler.</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Awaitable task returning the <typeparamref name="TResponse"/></returns>
-	IAsyncEnumerable<TResponse> Handle(TRequest request, StreamHandlerDelegate<TResponse> next, CancellationToken cancellationToken);
+	IAsyncEnumerable<TResponse> Handle(IServiceProvider provider, TRequest request, StreamHandlerDelegate<TResponse> next, CancellationToken cancellationToken);
 }

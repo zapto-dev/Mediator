@@ -23,6 +23,28 @@ public static class MediatorBuilderExtensions
         configure(builder.AddNamespace(ns));
         return builder;
     }
+
+    public static IMediatorBuilder AddPipelineBehavior<TBehavior>(this IMediatorBuilder builder)
+    {
+        return builder.AddPipelineBehavior(typeof(TBehavior));
+    }
+
+    public static IMediatorBuilder AddStreamPipelineBehavior<TBehavior>(this IMediatorBuilder builder)
+    {
+        return builder.AddStreamPipelineBehavior(typeof(TBehavior));
+    }
+
+    public static IMediatorBuilder AddPipelineBehavior<TRequest, TResponse>(this IMediatorBuilder builder, RequestMiddleware<TRequest, TResponse> middleware)
+        where TRequest : notnull
+    {
+        return builder.AddPipelineBehavior(new DelegatePipelineBehavior<TRequest, TResponse>(middleware));
+    }
+
+    public static IMediatorBuilder AddStreamPipelineBehavior<TRequest, TResponse>(this IMediatorBuilder builder, StreamMiddleware<TRequest, TResponse> middleware)
+        where TRequest : IStreamRequest<TResponse>
+    {
+        return builder.AddStreamPipelineBehavior(new DelegateStreamPipelineBehavior<TRequest, TResponse>(middleware));
+    }
 }
 
 public interface IMediatorBuilder
@@ -101,4 +123,26 @@ public interface IMediatorBuilder
     IMediatorBuilder AddDefaultStreamRequestHandler(Type handlerType);
 
     IMediatorBuilder AddDefaultStreamRequestHandler<THandler>() where THandler : class, IDefaultStreamRequestHandler;
+
+    IMediatorBuilder AddPipelineBehavior<TRequest, TResponse>(IPipelineBehavior<TRequest, TResponse> behavior)
+        where TRequest : notnull;
+
+    IMediatorBuilder AddPipelineBehavior(Type behaviorType);
+
+    IMediatorBuilder AddPipelineBehavior(Type requestType, Type? responseType, Type behaviorType);
+
+    IMediatorBuilder AddPipelineBehavior<TRequest, TResponse, TBehavior>()
+        where TRequest : notnull
+        where TBehavior : class, IPipelineBehavior<TRequest, TResponse>;
+
+    IMediatorBuilder AddStreamPipelineBehavior<TRequest, TResponse>(IStreamPipelineBehavior<TRequest, TResponse> behavior)
+        where TRequest : IStreamRequest<TResponse>;
+
+    IMediatorBuilder AddStreamPipelineBehavior(Type behaviorType);
+
+    IMediatorBuilder AddStreamPipelineBehavior(Type requestType, Type? responseType, Type behaviorType);
+
+    IMediatorBuilder AddStreamPipelineBehavior<TRequest, TResponse, TBehavior>()
+        where TRequest : IStreamRequest<TResponse>
+        where TBehavior : class, IStreamPipelineBehavior<TRequest, TResponse>;
 }

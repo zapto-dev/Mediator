@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Zapto.Mediator;
@@ -21,9 +22,10 @@ public interface IPipelineBehavior<in TRequest, TResponse> where TRequest : notn
 	/// <summary>
 	/// Pipeline handler. Perform any additional behavior and await the <paramref name="next"/> delegate as necessary
 	/// </summary>
+	/// <param name="provider">Service provider</param>
 	/// <param name="request">Incoming request</param>
 	/// <param name="next">Awaitable delegate for the next action in the pipeline. Eventually this delegate represents the handler.</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Awaitable task returning the <typeparamref name="TResponse"/></returns>
-	ValueTask<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken);
+	ValueTask<TResponse> Handle(IServiceProvider provider, TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken);
 }

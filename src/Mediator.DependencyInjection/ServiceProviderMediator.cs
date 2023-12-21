@@ -101,7 +101,7 @@ public class ServiceProviderMediator : IMediator
         {
             var pipelineBehavior = array[i];
             var nextPipeline = next;
-            next = () => pipelineBehavior.Handle(request, nextPipeline, cancellationToken);
+            next = () => pipelineBehavior.Handle(_provider, request, nextPipeline, cancellationToken);
         }
 
         return next();
@@ -119,7 +119,7 @@ public class ServiceProviderMediator : IMediator
         foreach (var pipelineBehavior in pipeline.Reverse())
         {
             var nextPipeline = next;
-            next = () => pipelineBehavior.Handle(request, nextPipeline, cancellationToken);
+            next = () => pipelineBehavior.Handle(_provider, request, nextPipeline, cancellationToken);
         }
 
         return next();
@@ -199,7 +199,7 @@ public class ServiceProviderMediator : IMediator
         {
             var pipelineBehavior = array[i];
             var nextPipeline = next;
-            next = () => pipelineBehavior.Handle(request, nextPipeline, cancellationToken);
+            next = () => pipelineBehavior.Handle(_provider, request, nextPipeline, cancellationToken);
         }
 
         return next();
@@ -217,7 +217,7 @@ public class ServiceProviderMediator : IMediator
         foreach (var pipelineBehavior in pipeline.Reverse())
         {
             var nextPipeline = next;
-            next = () => pipelineBehavior.Handle(request, nextPipeline, cancellationToken);
+            next = () => pipelineBehavior.Handle(_provider, request, nextPipeline, cancellationToken);
         }
 
         return next();
