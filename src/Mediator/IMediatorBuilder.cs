@@ -47,21 +47,28 @@ public static class MediatorBuilderExtensions
     }
 }
 
+public enum RegistrationScope
+{
+    Transient,
+    Singleton,
+    Scoped
+}
+
 public interface IMediatorBuilder
 {
     IMediatorBuilder AddNamespace(MediatorNamespace ns);
 
-    IMediatorBuilder AddRequestHandler<THandler>() where THandler : IRequestHandler;
+    IMediatorBuilder AddRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : IRequestHandler;
 
-    IMediatorBuilder AddRequestHandler(Type handlerType);
+    IMediatorBuilder AddRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddRequestHandler(Type requestType, Type? responseType, Type handlerType);
+    IMediatorBuilder AddRequestHandler(Type requestType, Type? responseType, Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddRequestHandler<TRequest, TResponse, THandler>()
+    IMediatorBuilder AddRequestHandler<TRequest, TResponse, THandler>(RegistrationScope scope = RegistrationScope.Transient)
         where TRequest : IRequest<TResponse>
         where THandler : class, IRequestHandler<TRequest, TResponse>;
 
-    IMediatorBuilder AddRequestHandler<TRequest, THandler>()
+    IMediatorBuilder AddRequestHandler<TRequest, THandler>(RegistrationScope scope = RegistrationScope.Transient)
         where TRequest : IRequest<Unit>
         where THandler : class, IRequestHandler<TRequest, Unit>;
 
@@ -73,14 +80,14 @@ public interface IMediatorBuilder
 
     IMediatorBuilder AddRequestHandler(Delegate handler);
 
-    IMediatorBuilder AddNotificationHandler(Type notificationType, Type handlerType);
+    IMediatorBuilder AddNotificationHandler(Type notificationType, Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddNotificationHandler(Type handlerType);
+    IMediatorBuilder AddNotificationHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddNotificationHandler<THandler>()
+    IMediatorBuilder AddNotificationHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient)
         where THandler : INotificationHandler;
 
-    IMediatorBuilder AddNotificationHandler<TNotification, THandler>()
+    IMediatorBuilder AddNotificationHandler<TNotification, THandler>(RegistrationScope scope = RegistrationScope.Transient)
         where TNotification : INotification
         where THandler : class, INotificationHandler<TNotification>;
 
@@ -92,17 +99,17 @@ public interface IMediatorBuilder
 
     IMediatorBuilder AddNotificationHandler(Delegate handler);
 
-    IMediatorBuilder AddStreamRequestHandler(Type type);
+    IMediatorBuilder AddStreamRequestHandler(Type type, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddStreamRequestHandler<THandler>() where THandler : IStreamRequestHandler;
+    IMediatorBuilder AddStreamRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : IStreamRequestHandler;
 
-    IMediatorBuilder AddStreamRequestHandler(Type requestType, Type? responseType, Type handlerType);
+    IMediatorBuilder AddStreamRequestHandler(Type requestType, Type? responseType, Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddStreamRequestHandler<TRequest, TResponse, THandler>()
+    IMediatorBuilder AddStreamRequestHandler<TRequest, TResponse, THandler>(RegistrationScope scope = RegistrationScope.Transient)
         where TRequest : IStreamRequest<TResponse>
         where THandler : class, IStreamRequestHandler<TRequest, TResponse>;
 
-    IMediatorBuilder AddStreamRequestHandler<TRequest, THandler>()
+    IMediatorBuilder AddStreamRequestHandler<TRequest, THandler>(RegistrationScope scope = RegistrationScope.Transient)
         where TRequest : IStreamRequest<Unit>
         where THandler : class, IStreamRequestHandler<TRequest, Unit>;
 
@@ -112,37 +119,37 @@ public interface IMediatorBuilder
     public IMediatorBuilder AddStreamRequestHandler<TRequest, TResponse>(Func<IServiceProvider, TRequest, IAsyncEnumerable<TResponse>> handler)
         where TRequest : IStreamRequest<TResponse>;
 
-    IMediatorBuilder AddDefaultRequestHandler(Type handlerType);
+    IMediatorBuilder AddDefaultRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddDefaultRequestHandler<THandler>() where THandler : class, IDefaultRequestHandler;
+    IMediatorBuilder AddDefaultRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : class, IDefaultRequestHandler;
 
-    IMediatorBuilder AddDefaultNotificationHandler(Type handlerType);
+    IMediatorBuilder AddDefaultNotificationHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddDefaultNotificationHandler<THandler>() where THandler : class, IDefaultNotificationHandler;
+    IMediatorBuilder AddDefaultNotificationHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : class, IDefaultNotificationHandler;
 
-    IMediatorBuilder AddDefaultStreamRequestHandler(Type handlerType);
+    IMediatorBuilder AddDefaultStreamRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddDefaultStreamRequestHandler<THandler>() where THandler : class, IDefaultStreamRequestHandler;
+    IMediatorBuilder AddDefaultStreamRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : class, IDefaultStreamRequestHandler;
 
     IMediatorBuilder AddPipelineBehavior<TRequest, TResponse>(IPipelineBehavior<TRequest, TResponse> behavior)
         where TRequest : notnull;
 
-    IMediatorBuilder AddPipelineBehavior(Type behaviorType);
+    IMediatorBuilder AddPipelineBehavior(Type behaviorType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddPipelineBehavior(Type requestType, Type? responseType, Type behaviorType);
+    IMediatorBuilder AddPipelineBehavior(Type requestType, Type? responseType, Type behaviorType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddPipelineBehavior<TRequest, TResponse, TBehavior>()
+    IMediatorBuilder AddPipelineBehavior<TRequest, TResponse, TBehavior>(RegistrationScope scope = RegistrationScope.Transient)
         where TRequest : notnull
         where TBehavior : class, IPipelineBehavior<TRequest, TResponse>;
 
     IMediatorBuilder AddStreamPipelineBehavior<TRequest, TResponse>(IStreamPipelineBehavior<TRequest, TResponse> behavior)
         where TRequest : IStreamRequest<TResponse>;
 
-    IMediatorBuilder AddStreamPipelineBehavior(Type behaviorType);
+    IMediatorBuilder AddStreamPipelineBehavior(Type behaviorType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddStreamPipelineBehavior(Type requestType, Type? responseType, Type behaviorType);
+    IMediatorBuilder AddStreamPipelineBehavior(Type requestType, Type? responseType, Type behaviorType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddStreamPipelineBehavior<TRequest, TResponse, TBehavior>()
+    IMediatorBuilder AddStreamPipelineBehavior<TRequest, TResponse, TBehavior>(RegistrationScope scope = RegistrationScope.Transient)
         where TRequest : IStreamRequest<TResponse>
         where TBehavior : class, IStreamPipelineBehavior<TRequest, TResponse>;
 }

@@ -6,39 +6,39 @@ namespace Zapto.Mediator;
 
 public partial class MediatorBuilder : IMediatorBuilder
 {
-	public IMediatorBuilder AddDefaultRequestHandler(Type handlerType)
+	public IMediatorBuilder AddDefaultRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient)
 	{
-		_services.AddTransient(typeof(IDefaultRequestHandler), handlerType);
+		_services.Add(new ServiceDescriptor(typeof(IDefaultRequestHandler), handlerType, GetLifetime(scope)));
 		return this;
 	}
 
-	public IMediatorBuilder AddDefaultRequestHandler<THandler>() where THandler : class, IDefaultRequestHandler
+	public IMediatorBuilder AddDefaultRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : class, IDefaultRequestHandler
 	{
-		_services.AddTransient<IDefaultRequestHandler, THandler>();
+		_services.Add(new ServiceDescriptor(typeof(IDefaultRequestHandler), typeof(THandler), GetLifetime(scope)));
 		return this;
 	}
 
-	public IMediatorBuilder AddDefaultNotificationHandler(Type handlerType)
+	public IMediatorBuilder AddDefaultNotificationHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient)
 	{
-		_services.AddTransient(typeof(IDefaultNotificationHandler), handlerType);
+		_services.Add(new ServiceDescriptor(typeof(IDefaultNotificationHandler), handlerType, GetLifetime(scope)));
 		return this;
 	}
 
-	public IMediatorBuilder AddDefaultNotificationHandler<THandler>() where THandler : class, IDefaultNotificationHandler
+	public IMediatorBuilder AddDefaultNotificationHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : class, IDefaultNotificationHandler
 	{
-		_services.AddTransient<IDefaultNotificationHandler, THandler>();
+		_services.Add(new ServiceDescriptor(typeof(IDefaultNotificationHandler), typeof(THandler), GetLifetime(scope)));
 		return this;
 	}
 
-	public IMediatorBuilder AddDefaultStreamRequestHandler(Type handlerType)
+	public IMediatorBuilder AddDefaultStreamRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient)
 	{
-		_services.AddTransient(typeof(IDefaultStreamRequestHandler), handlerType);
+		_services.Add(new ServiceDescriptor(typeof(IDefaultStreamRequestHandler), handlerType, GetLifetime(scope)));
 		return this;
 	}
 
-	public IMediatorBuilder AddDefaultStreamRequestHandler<THandler>() where THandler : class, IDefaultStreamRequestHandler
+	public IMediatorBuilder AddDefaultStreamRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : class, IDefaultStreamRequestHandler
 	{
-		_services.AddTransient<IDefaultStreamRequestHandler, THandler>();
+		_services.Add(new ServiceDescriptor(typeof(IDefaultStreamRequestHandler), typeof(THandler), GetLifetime(scope)));
 		return this;
 	}
 }

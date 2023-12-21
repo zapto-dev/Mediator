@@ -11,17 +11,17 @@ namespace Zapto.Mediator;
 
 public partial class MediatorBuilder
 {
-    public IMediatorBuilder AddNotificationHandler<TNotification, THandler>()
+    public IMediatorBuilder AddNotificationHandler<TNotification, THandler>(RegistrationScope scope = RegistrationScope.Transient)
         where TNotification : INotification
         where THandler : class, INotificationHandler<TNotification>
     {
         if (_ns == null)
         {
-            _services.AddTransient<INotificationHandler<TNotification>, THandler>();
+            _services.Add(new ServiceDescriptor(typeof(INotificationHandler<TNotification>), typeof(THandler), GetLifetime(scope)));
         }
         else
         {
-            _services.TryAddTransient<THandler>();
+            _services.TryAdd(new ServiceDescriptor(typeof(THandler), typeof(THandler), GetLifetime(scope)));
             _services.AddSingleton<INamespaceNotificationHandler<TNotification>>(new NamespaceNotificationHandlerProvider<TNotification, THandler>(_ns.Value));
         }
 

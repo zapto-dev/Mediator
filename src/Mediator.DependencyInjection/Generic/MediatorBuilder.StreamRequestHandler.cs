@@ -7,7 +7,7 @@ namespace Zapto.Mediator;
 
 public partial class MediatorBuilder
 {
-    public IMediatorBuilder AddStreamRequestHandler(Type handlerType)
+    public IMediatorBuilder AddStreamRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient)
     {
         var handlers = handlerType.GetInterfaces()
             .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IStreamRequestHandler<,>))
@@ -31,30 +31,32 @@ public partial class MediatorBuilder
                     { IsGenericType: true } when HasGenericParameter(responseType) => responseType.GetGenericTypeDefinition(),
                     _ => responseType
                 },
-                handlerType);
+                handlerType,
+                scope);
         }
 
         return this;
     }
 
-    public IMediatorBuilder AddStreamRequestHandler<THandler>() where THandler : IStreamRequestHandler
+    public IMediatorBuilder AddStreamRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : IStreamRequestHandler
     {
-        return AddStreamRequestHandler(typeof(THandler));
+        return AddStreamRequestHandler(typeof(THandler), scope);
     }
 
     public IMediatorBuilder AddStreamRequestHandler(
         Type requestType,
         Type? responseType,
-        Type handlerType)
+        Type handlerType,
+        RegistrationScope scope = RegistrationScope.Transient)
     {
         if (requestType.IsGenericType || responseType is null || responseType.IsGenericTypeDefinition)
         {
-            _services.AddTransient(handlerType);
+            _services.Add(new ServiceDescriptor(handlerType, handlerType, GetLifetime(scope)));
             _services.AddSingleton(new GenericStreamRequestRegistration(requestType, responseType, handlerType));
         }
         else
         {
-            _services.AddTransient(typeof(IStreamRequestHandler<,>).MakeGenericType(requestType, responseType), handlerType);
+            _services.Add(new ServiceDescriptor(typeof(IStreamRequestHandler<,>).MakeGenericType(requestType, responseType), handlerType, GetLifetime(scope)));
         }
 
         return this;

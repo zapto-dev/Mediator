@@ -9,22 +9,23 @@ public partial class MediatorBuilder
 {
     public IMediatorBuilder AddNotificationHandler(
         Type notificationType,
-        Type handlerType)
+        Type handlerType,
+        RegistrationScope scope = RegistrationScope.Transient)
     {
         if (notificationType.IsGenericType)
         {
-            _services.AddTransient(handlerType);
+            _services.Add(new ServiceDescriptor(handlerType, handlerType, GetLifetime(scope)));
             _services.AddSingleton(new GenericNotificationRegistration(notificationType, handlerType));
         }
         else
         {
-            _services.AddTransient(typeof(INotificationHandler<>).MakeGenericType(notificationType), handlerType);
+            _services.Add(new ServiceDescriptor(typeof(INotificationHandler<>).MakeGenericType(notificationType), handlerType, GetLifetime(scope)));
         }
 
         return this;
     }
 
-    public IMediatorBuilder AddNotificationHandler(Type handlerType)
+    public IMediatorBuilder AddNotificationHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient)
     {
         var handlers = handlerType.GetInterfaces()
             .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(INotificationHandler<>))
@@ -41,16 +42,17 @@ public partial class MediatorBuilder
 
             AddNotificationHandler(
                 notificationType,
-                handlerType);
+                handlerType,
+                scope);
         }
 
         return this;
     }
 
-    public IMediatorBuilder AddNotificationHandler<THandler>()
+    public IMediatorBuilder AddNotificationHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient)
         where THandler : INotificationHandler
     {
-        AddNotificationHandler(typeof(THandler));
+        AddNotificationHandler(typeof(THandler), scope);
         return this;
     }
 }

@@ -13,7 +13,7 @@ public partial class MediatorBuilder : IMediatorBuilder
 		return this;
 	}
 
-	public IMediatorBuilder AddPipelineBehavior(Type behaviorType)
+	public IMediatorBuilder AddPipelineBehavior(Type behaviorType, RegistrationScope scope = RegistrationScope.Transient)
 	{
 		var handlers = behaviorType.GetInterfaces()
 			.Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>))
@@ -37,26 +37,27 @@ public partial class MediatorBuilder : IMediatorBuilder
 					{ IsGenericType: true } when HasGenericParameter(responseType) => responseType.GetGenericTypeDefinition(),
 					_ => responseType
 				},
-				behaviorType);
+				behaviorType,
+				scope);
 		}
 
 		return this;
 	}
 
-	public IMediatorBuilder AddPipelineBehavior(Type requestType, Type? responseType, Type behaviorType)
+	public IMediatorBuilder AddPipelineBehavior(Type requestType, Type? responseType, Type behaviorType, RegistrationScope scope = RegistrationScope.Transient)
 	{
 		if (requestType.IsGenericType || responseType is null || responseType.IsGenericTypeDefinition)
 		{
 			throw new NotSupportedException("Generic pipeline behaviors are not supported.");
 		}
 
-		_services.AddTransient(typeof(IPipelineBehavior<,>).MakeGenericType(requestType, responseType), behaviorType);
+		_services.Add(new ServiceDescriptor(typeof(IPipelineBehavior<,>).MakeGenericType(requestType, responseType), behaviorType, GetLifetime(scope)));
 		return this;
 	}
 
-	public IMediatorBuilder AddPipelineBehavior<TRequest, TResponse, TBehavior>() where TRequest : notnull where TBehavior : class, IPipelineBehavior<TRequest, TResponse>
+	public IMediatorBuilder AddPipelineBehavior<TRequest, TResponse, TBehavior>(RegistrationScope scope = RegistrationScope.Transient) where TRequest : notnull where TBehavior : class, IPipelineBehavior<TRequest, TResponse>
 	{
-		_services.AddSingleton<IPipelineBehavior<TRequest, TResponse>, TBehavior>();
+		_services.Add(new ServiceDescriptor(typeof(IPipelineBehavior<TRequest, TResponse>), typeof(TBehavior), GetLifetime(scope)));
 		return this;
 	}
 
@@ -66,7 +67,7 @@ public partial class MediatorBuilder : IMediatorBuilder
 		return this;
 	}
 
-	public IMediatorBuilder AddStreamPipelineBehavior(Type behaviorType)
+	public IMediatorBuilder AddStreamPipelineBehavior(Type behaviorType, RegistrationScope scope = RegistrationScope.Transient)
 	{
 		var handlers = behaviorType.GetInterfaces()
 			.Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IStreamPipelineBehavior<,>))
@@ -90,26 +91,27 @@ public partial class MediatorBuilder : IMediatorBuilder
 					{ IsGenericType: true } when HasGenericParameter(responseType) => responseType.GetGenericTypeDefinition(),
 					_ => responseType
 				},
-				behaviorType);
+				behaviorType,
+				scope);
 		}
 
 		return this;
 	}
 
-	public IMediatorBuilder AddStreamPipelineBehavior(Type requestType, Type? responseType, Type behaviorType)
+	public IMediatorBuilder AddStreamPipelineBehavior(Type requestType, Type? responseType, Type behaviorType, RegistrationScope scope = RegistrationScope.Transient)
 	{
 		if (requestType.IsGenericType || responseType is null || responseType.IsGenericTypeDefinition)
 		{
 			throw new NotSupportedException("Generic pipeline behaviors are not supported.");
 		}
 
-		_services.AddTransient(typeof(IStreamPipelineBehavior<,>).MakeGenericType(requestType, responseType), behaviorType);
+		_services.Add(new ServiceDescriptor(typeof(IStreamPipelineBehavior<,>).MakeGenericType(requestType, responseType), behaviorType, GetLifetime(scope)));
 		return this;
 	}
 
-	public IMediatorBuilder AddStreamPipelineBehavior<TRequest, TResponse, TBehavior>() where TRequest : IStreamRequest<TResponse> where TBehavior : class, IStreamPipelineBehavior<TRequest, TResponse>
+	public IMediatorBuilder AddStreamPipelineBehavior<TRequest, TResponse, TBehavior>(RegistrationScope scope = RegistrationScope.Transient) where TRequest : IStreamRequest<TResponse> where TBehavior : class, IStreamPipelineBehavior<TRequest, TResponse>
 	{
-		_services.AddSingleton<IStreamPipelineBehavior<TRequest, TResponse>, TBehavior>();
+		_services.Add(new ServiceDescriptor(typeof(IStreamPipelineBehavior<TRequest, TResponse>), typeof(TBehavior), GetLifetime(scope)));
 		return this;
 	}
 }
