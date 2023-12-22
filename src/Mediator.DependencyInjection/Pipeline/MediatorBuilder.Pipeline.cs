@@ -2,6 +2,7 @@
 using System.Linq;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Zapto.Mediator;
 
@@ -48,10 +49,14 @@ public partial class MediatorBuilder : IMediatorBuilder
 	{
 		if (requestType.IsGenericType || responseType is null || responseType.IsGenericTypeDefinition)
 		{
-			throw new NotSupportedException("Generic pipeline behaviors are not supported.");
+			_services.TryAdd(new ServiceDescriptor(behaviorType, behaviorType, GetLifetime(scope)));
+			_services.AddSingleton(new GenericPipelineBehaviorRegistration(requestType, responseType, behaviorType));
+		}
+		else
+		{
+			_services.Add(new ServiceDescriptor(typeof(IPipelineBehavior<,>).MakeGenericType(requestType, responseType), behaviorType, GetLifetime(scope)));
 		}
 
-		_services.Add(new ServiceDescriptor(typeof(IPipelineBehavior<,>).MakeGenericType(requestType, responseType), behaviorType, GetLifetime(scope)));
 		return this;
 	}
 

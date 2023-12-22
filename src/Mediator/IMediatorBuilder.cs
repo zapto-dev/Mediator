@@ -58,7 +58,8 @@ public interface IMediatorBuilder
 {
     IMediatorBuilder AddNamespace(MediatorNamespace ns);
 
-    IMediatorBuilder AddRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : IRequestHandler;
+    IMediatorBuilder AddRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient)
+        where THandler : IRequestHandler;
 
     IMediatorBuilder AddRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
@@ -101,7 +102,8 @@ public interface IMediatorBuilder
 
     IMediatorBuilder AddStreamRequestHandler(Type type, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddStreamRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : IStreamRequestHandler;
+    IMediatorBuilder AddStreamRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient)
+        where THandler : IStreamRequestHandler;
 
     IMediatorBuilder AddStreamRequestHandler(Type requestType, Type? responseType, Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
@@ -123,19 +125,22 @@ public interface IMediatorBuilder
 
     IMediatorBuilder AddDefaultRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddDefaultRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : class, IDefaultRequestHandler;
+    IMediatorBuilder AddDefaultRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient)
+        where THandler : class, IDefaultRequestHandler;
 
     IMediatorBuilder AddDefaultNotificationHandler(IDefaultNotificationHandler handler);
 
     IMediatorBuilder AddDefaultNotificationHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddDefaultNotificationHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : class, IDefaultNotificationHandler;
+    IMediatorBuilder AddDefaultNotificationHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient)
+        where THandler : class, IDefaultNotificationHandler;
 
     IMediatorBuilder AddDefaultStreamRequestHandler(IDefaultStreamRequestHandler handler);
 
     IMediatorBuilder AddDefaultStreamRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient);
 
-    IMediatorBuilder AddDefaultStreamRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient) where THandler : class, IDefaultStreamRequestHandler;
+    IMediatorBuilder AddDefaultStreamRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient)
+        where THandler : class, IDefaultStreamRequestHandler;
 
     IMediatorBuilder AddPipelineBehavior<TRequest, TResponse>(IPipelineBehavior<TRequest, TResponse> behavior)
         where TRequest : notnull;

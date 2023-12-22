@@ -21,6 +21,8 @@ public static partial class ServiceExtensions
         services.TryAddSingleton(typeof(GenericNotificationCache<>));
         services.TryAddTransient(typeof(GenericNotificationHandler<>));
 
+        services.TryAddSingleton(typeof(GenericPipelineBehavior<,>));
+
         services.TryAddSingleton(typeof(GenericStreamRequestCache<,>));
         services.TryAddTransient(typeof(IStreamRequestHandler<,>), typeof(GenericStreamRequestHandler<,>));
 

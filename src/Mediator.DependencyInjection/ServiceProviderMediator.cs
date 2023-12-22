@@ -90,7 +90,9 @@ public class ServiceProviderMediator : IMediator
         CancellationToken cancellationToken
     ) where TRequest : IRequest<TResponse>
     {
-        if (array.Length == 0)
+        var generic = _provider.GetRequiredService<GenericPipelineBehavior<TRequest, TResponse>>();
+
+        if (array.Length == 0 && generic.IsEmpty)
         {
             return handler.Handle(_provider, request, cancellationToken);
         }
@@ -104,7 +106,7 @@ public class ServiceProviderMediator : IMediator
             next = () => pipelineBehavior.Handle(_provider, request, nextPipeline, cancellationToken);
         }
 
-        return next();
+        return generic.Handle(_provider, request, next, cancellationToken);
     }
 
     private ValueTask<TResponse> SendWithPipelineEnumerable<TRequest, TResponse>(
@@ -114,6 +116,8 @@ public class ServiceProviderMediator : IMediator
         CancellationToken cancellationToken
     ) where TRequest : IRequest<TResponse>
     {
+        var generic = _provider.GetRequiredService<GenericPipelineBehavior<TRequest, TResponse>>();
+
         RequestHandlerDelegate<TResponse> next = () => handler.Handle(_provider, request, cancellationToken);
 
         foreach (var pipelineBehavior in pipeline.Reverse())
@@ -122,7 +126,7 @@ public class ServiceProviderMediator : IMediator
             next = () => pipelineBehavior.Handle(_provider, request, nextPipeline, cancellationToken);
         }
 
-        return next();
+        return generic.Handle(_provider, request, next, cancellationToken);
     }
 
     public IAsyncEnumerable<TResponse> CreateStream<TResponse>(MediatorNamespace ns, IStreamRequest<TResponse> request,
