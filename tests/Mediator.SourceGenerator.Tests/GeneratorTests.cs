@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using VerifyTests;
 using Zapto.Mediator.Generator;
 using VerifyXunit;
 using Xunit;

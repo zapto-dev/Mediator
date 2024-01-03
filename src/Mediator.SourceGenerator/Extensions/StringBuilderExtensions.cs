@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -20,30 +21,10 @@ public static class StringBuilderExtensions
     {
         var ns = symbol?.ContainingNamespace;
 
-        if (ns is null or { Name: null or null })
-        {
-            return string.Empty;
-        }
-
-        var sb = new StringBuilder();
-        AppendNamespace(sb, ns.ContainingNamespace);
-        sb.Append(ns.Name);
-        return sb.ToString();
+        return ns?.ToDisplayString() ?? "";
     }
 
-    public static void AppendNamespace(this StringBuilder sb, INamespaceSymbol type)
-    {
-        if (type is {Name: null or ""})
-        {
-            return;
-        }
-
-        AppendNamespace(sb, type.ContainingNamespace);
-        sb.Append(type.Name);
-        sb.Append('.');
-    }
-
-    public static void AppendValue(this StringBuilder sb, object? value)
+    internal static void AppendValue(this IndentedStringBuilder sb, object? value)
     {
         sb.Append(value switch
         {
@@ -55,11 +36,11 @@ public static class StringBuilderExtensions
         });
     }
 
-    public static void AppendType(
-        this StringBuilder sb,
-        ITypeSymbol type,
+    internal static void AppendType(
+        this IndentedStringBuilder sb,
+        SimpleType type,
         bool addNullable = true,
-        Func<ITypeSymbol, bool>? middleware = null,
+        Func<SimpleType, bool>? middleware = null,
         bool addGenericNames = true)
     {
         if (type is not {SpecialType: SpecialType.None})
@@ -73,7 +54,7 @@ public static class StringBuilderExtensions
             return;
         }
 
-        if (type is ITypeParameterSymbol)
+        if (type.IsTypeParameter)
         {
             sb.Append(type.Name);
             addNullable = false;
@@ -81,20 +62,26 @@ public static class StringBuilderExtensions
         else
         {
             sb.Append("global::");
-            AppendNamespace(sb, type.ContainingNamespace);
+
+            if (type.Namespace is not null)
+            {
+                sb.Append(type.Namespace);
+                sb.Append('.');
+            }
+
             sb.Append(type.Name);
         }
 
-        if (type is INamedTypeSymbol {IsGenericType: true} namedTypeSymbol)
+        if (type.IsGenericType)
         {
             sb.Append('<');
 
-            var length = namedTypeSymbol.TypeArguments.Length;
+            var length = type.TypeArguments.Length;
             for (var i = 0; i < length; i++)
             {
                 if (addGenericNames)
                 {
-                    AppendType(sb, namedTypeSymbol.TypeArguments[i], false, middleware);
+                    AppendType(sb, type.TypeArguments[i], false, middleware);
 
                     if (i != length - 1)
                     {
@@ -119,12 +106,12 @@ public static class StringBuilderExtensions
         }
     }
 
-    public static void AppendParameters(
-        this StringBuilder sb,
-        IReadOnlyList<IParameterSymbol> symbols,
-        Func<IParameterSymbol, bool>? middleware = null)
+    internal static void AppendParameters(
+        this IndentedStringBuilder sb,
+        EquatableArray<SimpleParameter> symbols,
+        Func<SimpleParameter, bool>? middleware = null)
     {
-        var length = symbols.Count;
+        var length = symbols.Length;
         for (var i = 0; i < length; i++)
         {
             var parameter = symbols[i];
@@ -141,12 +128,12 @@ public static class StringBuilderExtensions
         }
     }
 
-    public static void AppendParameterDefinitions(
-        this StringBuilder sb,
-        IReadOnlyList<IParameterSymbol> symbols,
-        Func<IParameterSymbol, AppendResult>? middleware = null)
+    internal static void AppendParameterDefinitions(
+        this IndentedStringBuilder sb,
+        EquatableArray<SimpleParameter> symbols,
+        Func<SimpleParameter, AppendResult>? middleware = null)
     {
-        var length = symbols.Count;
+        var length = symbols.Length;
 
         for (var i = 0; i < length; i++)
         {
@@ -176,6 +163,63 @@ public static class StringBuilderExtensions
             {
                 sb.Append(", ");
             }
+        }
+    }
+
+
+
+    internal static void AppendGenericConstraints(this IndentedStringBuilder sb, SimpleType type)
+    {
+        if (!type.IsGenericType)
+        {
+            return;
+        }
+
+        foreach (var parameter in type.TypeParameters)
+        {
+            var valid = parameter.ConstraintTypes.Length > 0 || parameter.HasReferenceTypeConstraint ||
+                        parameter.HasValueTypeConstraint ||
+                        parameter.HasUnmanagedTypeConstraint || parameter.HasConstructorConstraint;
+
+            if (!valid)
+            {
+                continue;
+            }
+
+            sb.Append("where ");
+            sb.Append(parameter.Name);
+            sb.Append(" : ");
+
+            int j;
+            for (j = 0; j < parameter.ConstraintTypes.Length; j++)
+            {
+                if (j > 1) sb.Append(", ");
+                sb.AppendType(parameter.ConstraintTypes[j], false);
+            }
+
+            if (parameter.HasReferenceTypeConstraint)
+            {
+                if (j++ > 1) sb.Append(", ");
+                sb.Append("class");
+            }
+            else if (parameter.HasValueTypeConstraint)
+            {
+                if (j++ > 1) sb.Append(", ");
+                sb.Append("struct");
+            }
+            else if (parameter.HasUnmanagedTypeConstraint)
+            {
+                if (j++ > 1) sb.Append(", ");
+                sb.Append("unmanaged");
+            }
+
+            if (parameter.HasConstructorConstraint)
+            {
+                if (j > 1) sb.Append(", ");
+                sb.Append("new()");
+            }
+
+            sb.AppendLine();
         }
     }
 

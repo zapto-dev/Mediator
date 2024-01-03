@@ -19,6 +19,7 @@ public class ReturnNullableGenericStreamHandler<TType> : IStreamRequestHandler<R
     public async IAsyncEnumerable<TType?> Handle(IServiceProvider provider, ReturnNullableGenericStreamRequest<TType> request,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        await Task.Yield();
         yield return request.Value;
     }
 }

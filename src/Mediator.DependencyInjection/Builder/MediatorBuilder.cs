@@ -24,4 +24,15 @@ public partial class MediatorBuilder : IMediatorBuilder
     {
         return new MediatorBuilder(_services, ns);
     }
+
+    private ServiceLifetime GetLifetime(RegistrationScope scope)
+    {
+        return scope switch
+        {
+            RegistrationScope.Transient => ServiceLifetime.Transient,
+            RegistrationScope.Singleton => ServiceLifetime.Singleton,
+            RegistrationScope.Scoped => ServiceLifetime.Scoped,
+            _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, null)
+        };
+    }
 }

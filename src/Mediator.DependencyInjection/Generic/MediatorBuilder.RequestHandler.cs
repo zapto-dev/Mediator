@@ -10,22 +10,23 @@ public partial class MediatorBuilder
     public IMediatorBuilder AddRequestHandler(
         Type requestType,
         Type? responseType,
-        Type handlerType)
+        Type handlerType,
+        RegistrationScope scope = RegistrationScope.Transient)
     {
         if (requestType.IsGenericType || responseType is null || responseType.IsGenericTypeDefinition)
         {
-            _services.AddTransient(handlerType);
+            _services.Add(new ServiceDescriptor(handlerType, handlerType, GetLifetime(scope)));
             _services.AddSingleton(new GenericRequestRegistration(requestType, responseType, handlerType));
         }
         else
         {
-            _services.AddTransient(typeof(IRequestHandler<,>).MakeGenericType(requestType, responseType), handlerType);
+            _services.Add(new ServiceDescriptor(typeof(IRequestHandler<,>).MakeGenericType(requestType, responseType), handlerType, GetLifetime(scope)));
         }
 
         return this;
     }
 
-    public IMediatorBuilder AddRequestHandler(Type handlerType)
+    public IMediatorBuilder AddRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient)
     {
         var handlers = handlerType.GetInterfaces()
             .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IRequestHandler<,>))
@@ -49,7 +50,8 @@ public partial class MediatorBuilder
                     { IsGenericType: true } when HasGenericParameter(responseType) => responseType.GetGenericTypeDefinition(),
                     _ => responseType
                 },
-                handlerType);
+                handlerType,
+                scope);
         }
 
         return this;
@@ -70,10 +72,10 @@ public partial class MediatorBuilder
         return false;
     }
 
-    public IMediatorBuilder AddRequestHandler<THandler>()
+    public IMediatorBuilder AddRequestHandler<THandler>(RegistrationScope scope = RegistrationScope.Transient)
         where THandler : IRequestHandler
     {
-        AddRequestHandler(typeof(THandler));
+        AddRequestHandler(typeof(THandler), scope);
         return this;
     }
 }

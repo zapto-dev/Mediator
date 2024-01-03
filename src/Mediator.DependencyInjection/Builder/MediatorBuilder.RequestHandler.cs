@@ -8,28 +8,28 @@ namespace Zapto.Mediator;
 
 public partial class MediatorBuilder
 {
-    public IMediatorBuilder AddRequestHandler<TRequest, TResponse, THandler>()
+    public IMediatorBuilder AddRequestHandler<TRequest, TResponse, THandler>(RegistrationScope scope = RegistrationScope.Transient)
         where TRequest : IRequest<TResponse>
         where THandler : class, IRequestHandler<TRequest, TResponse>
     {
         if (_ns == null)
         {
-            _services.AddTransient<IRequestHandler<TRequest, TResponse>, THandler>();
+            _services.Add(new ServiceDescriptor(typeof(IRequestHandler<TRequest, TResponse>), typeof(THandler), GetLifetime(scope)));
         }
         else
         {
-            _services.TryAddTransient<THandler>();
+            _services.TryAdd(new ServiceDescriptor(typeof(THandler), typeof(THandler), GetLifetime(scope)));
             _services.AddSingleton<INamespaceRequestHandler<TRequest, TResponse>>(new NamespaceRequestHandlerProvider<TRequest, TResponse, THandler>(_ns.Value));
         }
 
         return this;
     }
 
-    public IMediatorBuilder AddRequestHandler<TRequest, THandler>()
+    public IMediatorBuilder AddRequestHandler<TRequest, THandler>(RegistrationScope scope = RegistrationScope.Transient)
         where TRequest : IRequest<Unit>
         where THandler : class, IRequestHandler<TRequest, Unit>
     {
-        return AddRequestHandler<TRequest, Unit, THandler>();
+        return AddRequestHandler<TRequest, Unit, THandler>(scope);
     }
 
     public IMediatorBuilder AddRequestHandler<TRequest, TResponse>(IRequestHandler<TRequest, TResponse> handler)

@@ -35,12 +35,18 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
     private readonly GenericRequestCache<TRequest, TResponse> _cache;
     private readonly IEnumerable<GenericRequestRegistration> _enumerable;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IDefaultRequestHandler? _defaultHandler;
 
-    public GenericRequestHandler(IEnumerable<GenericRequestRegistration> enumerable, IServiceProvider serviceProvider, GenericRequestCache<TRequest, TResponse> cache)
+    public GenericRequestHandler(
+        IEnumerable<GenericRequestRegistration> enumerable,
+        IServiceProvider serviceProvider,
+        GenericRequestCache<TRequest, TResponse> cache,
+        IDefaultRequestHandler? defaultHandler = null)
     {
         _enumerable = enumerable;
         _serviceProvider = serviceProvider;
         _cache = cache;
+        _defaultHandler = defaultHandler;
     }
 
     public async ValueTask<TResponse> Handle(IServiceProvider provider, TRequest request, CancellationToken ct)
@@ -57,7 +63,12 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
 
         if (!requestType.IsGenericType)
         {
-            throw new InvalidCastException($"No handler found for request type {requestType.FullName}.");
+            if (_defaultHandler is null)
+            {
+                throw new HandlerNotFoundException($"No handler found for request type {requestType.FullName}.");
+            }
+
+            return await _defaultHandler.Handle<TRequest, TResponse>(_serviceProvider, request, ct);
         }
 
         var arguments = requestType.GetGenericArguments();
@@ -85,6 +96,17 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
             return await handler.Handle(provider, request, ct);
         }
 
-        throw new InvalidCastException($"No handler found for request type {requestType.FullName}.");
+        if (_defaultHandler is null)
+        {
+            throw new HandlerNotFoundException($"No handler found for request type {requestType.FullName}.");
+        }
+
+        var method = _defaultHandler
+            .GetType()
+            .GetMethod(nameof(IDefaultRequestHandler.Handle))!
+            .MakeGenericMethod(arguments);
+
+        return await (ValueTask<TResponse>) method.Invoke(_defaultHandler, new object[] {_serviceProvider, request, ct})!;
+
     }
 }

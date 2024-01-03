@@ -44,7 +44,7 @@ internal sealed class GenericNotificationCache<TNotification> : INotificationCac
     public SemaphoreSlim Lock { get; } = new(1, 1);
 }
 
-internal sealed class GenericNotificationHandler<TNotification> : INotificationHandler<TNotification>
+internal sealed class GenericNotificationHandler<TNotification>
     where TNotification : INotification
 {
     private readonly GenericNotificationCache<TNotification> _cache;
@@ -58,7 +58,7 @@ internal sealed class GenericNotificationHandler<TNotification> : INotificationH
         _cache = cache;
     }
 
-    public async ValueTask Handle(IServiceProvider provider, TNotification notification, CancellationToken ct)
+    public async ValueTask<bool> Handle(IServiceProvider provider, TNotification notification, CancellationToken ct)
     {
         if (_cache.Registrations.Count > 0)
         {
@@ -81,14 +81,14 @@ internal sealed class GenericNotificationHandler<TNotification> : INotificationH
                 await ((INotificationHandler<TNotification>)handler).Handle(provider, notification, ct);
             }
 
-            return;
+            return cachedTypes.Count > 0;
         }
 
         var notificationType = typeof(TNotification);
 
         if (!notificationType.IsGenericType)
         {
-            return;
+            return false;
         }
 
         var arguments = notificationType.GetGenericArguments();
@@ -111,5 +111,6 @@ internal sealed class GenericNotificationHandler<TNotification> : INotificationH
         }
 
         _cache.HandlerTypes = handlerTypes;
+        return handlerTypes.Count > 0;
     }
 }
