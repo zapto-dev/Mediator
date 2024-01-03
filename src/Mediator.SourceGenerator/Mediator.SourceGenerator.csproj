@@ -4,7 +4,7 @@
 		<AssemblyName>Zapto.Mediator.SourceGenerator</AssemblyName>
 		<RootNamespace>Zapto.Mediator.Generator</RootNamespace>
 		<TargetFramework>netstandard2.0</TargetFramework>
-		<LangVersion>10</LangVersion>
+		<LangVersion>12</LangVersion>
 		<IncludeBuildOutput>false</IncludeBuildOutput>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>

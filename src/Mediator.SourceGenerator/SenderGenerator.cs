@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -13,45 +13,206 @@ namespace Zapto.Mediator.Generator;
 [Generator]
 public class SenderGenerator : IIncrementalGenerator
 {
+    private bool _generateAssemblyInfo;
+
     private static readonly string[] Interfaces =
     {
         "Zapto.Mediator.ISender",
         "Zapto.Mediator.IPublisher"
     };
 
-    public void Initialize(IncrementalGeneratorInitializationContext context)
+    public SenderGenerator()
+        : this(generateAssemblyInfo: true)
     {
-        var classDeclorations = context.SyntaxProvider
-            .CreateSyntaxProvider(
-                predicate: static (s, _) => s is ClassDeclarationSyntax or RecordDeclarationSyntax,
-                transform: static (ctx, _) => ctx.Node);
-
-        IncrementalValueProvider<(Compilation, ImmutableArray<SyntaxNode>)> compilationAndClasses
-            = context.CompilationProvider.Combine(classDeclorations.Collect());
-
-        context.RegisterSourceOutput(compilationAndClasses,
-            static (spc, source) => Execute(source.Item1, source.Item2, spc));
     }
 
-    public static void Execute(Compilation compilation, ImmutableArray<SyntaxNode> classes, SourceProductionContext context)
+    public SenderGenerator(bool generateAssemblyInfo)
     {
-        var models = new Dictionary<SyntaxTree, SemanticModel>();
-        var requests = new List<ExtensionMethodReference>();
-        var handlers = new List<HandlerReference>();
+        _generateAssemblyInfo = generateAssemblyInfo;
+    }
 
-        SemanticModel GetModel(SyntaxNode item)
-        {
-            var tree = item.SyntaxTree;
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        IncrementalValuesProvider<SourceResult> results = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                predicate: static (s, _) => s is ClassDeclarationSyntax or RecordDeclarationSyntax,
+                transform: static (ctx, _) => GetResult(ctx))
+            .WithTrackingName("FindClasses")
+            .Where(static i => i is not null)!;
 
-            if (!models.TryGetValue(tree, out var model))
+        var handlers = results
+            .SelectMany(GetAllHandlers)
+            .Collect();
+
+        var resultsWithHandlers = results
+            .Combine(handlers)
+            .Select(static (ctx, _) =>
             {
-                model = compilation.GetSemanticModel(tree);
-                models.Add(tree, model);
-            }
+                var builder = ImmutableArray.CreateBuilder<(ExtensionMethodReference, SimpleType?)>(ctx.Left.Requests.Length);
+                var requestType = ctx.Left.Type;
 
-            return model;
+                foreach (var request in ctx.Left.Requests)
+                {
+                    var (handlerType, _) = ctx.Right.FirstOrDefault(i =>
+                        request.Interface.Name == "IRequest" &&
+                        i.Handler.Interface.Name == "IRequestHandler" &&
+                        i.Handler.Interface.TypeArguments[0].SimpleEquals(requestType) &&
+                        i.Handler.Interface.TypeArguments[1].SimpleEquals(request.Interface.TypeArguments[0]));
+
+                    builder.Add((request, handlerType));
+                }
+
+                return new SourceWithHandlerResult(
+                    Type: ctx.Left.Type,
+                    Requests: builder.ToImmutable()
+                );
+            })
+            .WithTrackingName("FindHandlers")!;
+
+        if (_generateAssemblyInfo)
+        {
+            context.RegisterSourceOutput(handlers, static (spc, source) => CreateAssemblyInfo(spc, source));
         }
 
+        context.RegisterSourceOutput(resultsWithHandlers, static (spc, source) => CreateSource(spc, source));
+    }
+
+    private ImmutableArray<(SimpleType Type, HandlerReference Handler)> GetAllHandlers(SourceResult result, CancellationToken _)
+    {
+        if (result.Handlers.IsEmpty)
+        {
+            return ImmutableArray<(SimpleType, HandlerReference)>.Empty;
+        }
+
+        var builder = new EquatableArrayBuilder<(SimpleType, HandlerReference)>(result.Handlers.Length);
+
+        foreach (var handler in result.Handlers)
+        {
+            builder.Add((result.Type, handler));
+        }
+
+        return builder.ToEquatableArray();
+    }
+
+    private static void CreateAssemblyInfo(SourceProductionContext spc, ImmutableArray<(SimpleType, HandlerReference)> handlers)
+    {
+        if (handlers.IsEmpty)
+        {
+            return;
+        }
+
+        const string builder = "global::Zapto.Mediator.IMediatorBuilder";
+
+        var sb = new IndentedStringBuilder();
+
+        sb.AppendLine();
+
+        using (sb.CodeBlock("namespace Zapto.Mediator"))
+        using (sb.CodeBlock("internal static class AssemblyExtensions"))
+        using (sb.CodeBlock($"public static {builder} AddAssemblyHandlers(this {builder} builder)"))
+        {
+            foreach (var (type, handler) in handlers)
+            {
+                if (handler.Interface.Name is "IRequestHandler")
+                {
+                    sb.Append("builder.AddRequestHandler(typeof(");
+                    sb.AppendType(type, addNullable: false, addGenericNames: false);
+                    sb.AppendLine("));");
+                }
+                else if (handler.Interface.Name == "INotificationHandler")
+                {
+                    sb.Append("builder.AddNotificationHandler(typeof(");
+                    sb.AppendType(type, addNullable: false, addGenericNames: false);
+                    sb.AppendLine("));");
+                }
+                else if (handler.Interface.Name == "IStreamRequestHandler")
+                {
+                    sb.Append("builder.AddStreamRequestHandler(typeof(");
+                    sb.AppendType(type, addNullable: false, addGenericNames: false);
+                    sb.AppendLine("));");
+                }
+            }
+
+            sb.AppendLine("return builder;");
+        }
+
+        spc.AddSource("AssemblyExtensions.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
+    }
+
+    private static SourceResult? GetResult(GeneratorSyntaxContext context)
+    {
+        Accessibility accessibility;
+        BaseListSyntax? baseList;
+
+        if (context.Node is ClassDeclarationSyntax classDeclaration)
+        {
+            accessibility = classDeclaration.Modifiers.GetAccessibility();
+            baseList = classDeclaration.BaseList;
+        }
+        else if (context.Node is RecordDeclarationSyntax recordDeclaration)
+        {
+            accessibility = recordDeclaration.Modifiers.GetAccessibility();
+            baseList = recordDeclaration.BaseList;
+        }
+        else
+        {
+            return null;
+        }
+
+        if (baseList is null)
+        {
+            return null;
+        }
+
+        var compilation = context.SemanticModel.Compilation;
+        Dictionary<(string Namespace, string Type), EquatableArray<ExtensionMethod>>? methodsByType = null;
+
+        var symbol = (INamedTypeSymbol) context.SemanticModel.GetDeclaredSymbol(context.Node)!;
+
+        var requests = new EquatableArrayBuilder<ExtensionMethodReference>();
+        var handlers = new EquatableArrayBuilder<HandlerReference>();
+
+        foreach (var current in symbol.AllInterfaces)
+        {
+            if (current.Name is ("IRequest" or "INotification" or "IStreamRequest") &&
+                (methodsByType ??= GetInterfaceMethods(compilation)).TryGetValue((current.GetNamespace(), current.Name), out var results) &&
+                results.Any(i => i.Type.IsGenericType == current.IsGenericType && i.Type.TypeArguments.Length == current.TypeArguments.Length))
+            {
+                requests.Add(new ExtensionMethodReference(
+                    accessibility,
+                    SimpleType.FromSymbol(current),
+                    results
+                ));
+            }
+
+            if (!symbol.IsAbstract &&
+                current.IsGenericType &&
+                current
+                    is { Name: "IRequestHandler", TypeArguments.Length: 2 }
+                    or { Name: "INotificationHandler", TypeArguments.Length: 1 }
+                    or { Name: "IStreamRequestHandler", TypeArguments.Length: 2 } &&
+                !symbol.GetAttributes().Any(i => i.AttributeClass?.Name == "IgnoreHandlerAttribute"))
+            {
+                handlers.Add(new HandlerReference(
+                    SimpleType.FromSymbol(current)
+                ));
+            }
+        }
+
+        if (requests.Count == 0 && handlers.Count == 0)
+        {
+            return null;
+        }
+
+        return new SourceResult(
+            Type: SimpleType.FromSymbol(symbol, withConstructors: true),
+            requests.ToEquatableArray(),
+            handlers.ToEquatableArray()
+        );
+    }
+
+    private static Dictionary<(string Namespace, string Type), EquatableArray<ExtensionMethod>> GetInterfaceMethods(Compilation compilation)
+    {
         var types = Interfaces
             .Select(i => compilation.GetTypeByMetadataName(i)!)
             .Where(i => i is not null)
@@ -65,92 +226,31 @@ public class SenderGenerator : IIncrementalGenerator
                     var type = m.TypeParameters[0].ConstraintTypes[0];
 
                     return new ExtensionMethod(
-                        Type: i,
-                        Method: m,
+                        ContainingMethod: SimpleType.FromSymbol(m.ContainingType),
+                        Type: SimpleType.FromSymbol(type),
+                        Method: SimpleMethod.FromSymbol(m),
                         ParameterType: (
                             Namespace: type.GetNamespace(),
                             Type: type.Name
-                        ),
-                        type as INamedTypeSymbol
+                        )
                     );
-                }))
-            .ToList();
+                }));
 
         var methodsByType = types
             .GroupBy(i => i.ParameterType)
-            .ToDictionary(g => g.Key, g => g.ToList());
+            .ToDictionary(g => g.Key, g => new EquatableArray<ExtensionMethod>(g.ToArray()));
 
-        foreach (var syntaxNode in classes.Distinct())
-        {
-            Accessibility accessibility;
-            BaseListSyntax? baseList;
+        return methodsByType;
+    }
 
-            if (syntaxNode is ClassDeclarationSyntax classDeclaration)
-            {
-                accessibility = classDeclaration.Modifiers.GetAccessibility();
-                baseList = classDeclaration.BaseList;
-            }
-            else if (syntaxNode is RecordDeclarationSyntax recordDeclaration)
-            {
-                accessibility = recordDeclaration.Modifiers.GetAccessibility();
-                baseList = recordDeclaration.BaseList;
-            }
-            else
-            {
-                continue;
-            }
-
-            if (baseList is null)
-            {
-                continue;
-            }
-
-            var symbol = (INamedTypeSymbol) GetModel(syntaxNode).GetDeclaredSymbol(syntaxNode)!;
-
-            foreach (var current in symbol.AllInterfaces)
-            {
-                if (methodsByType.TryGetValue((current.GetNamespace(), current.Name), out var results) &&
-                    results.Any(i => i.Constraint == null || i.Constraint.IsGenericType == current.IsGenericType && i.Constraint.TypeArguments.Length == current.TypeArguments.Length))
-                {
-                    requests.Add(new ExtensionMethodReference(
-                        accessibility,
-                        symbol,
-                        current,
-                        results
-                    ));
-                }
-
-                if (!symbol.IsAbstract &&
-                    current.IsGenericType &&
-                    current
-                        is { Name: "IRequestHandler", TypeArguments.Length: 2 }
-                        or { Name: "INotificationHandler", TypeArguments.Length: 1 }
-                        or { Name: "IStreamRequestHandler", TypeArguments.Length: 2 } &&
-                    !symbol.GetAttributes().Any(i => i.AttributeClass?.Name == "IgnoreHandlerAttribute"))
-                {
-                    handlers.Add(new HandlerReference(
-                        symbol,
-                        current
-                    ));
-                }
-            }
-        }
-
-        if (requests.Count == 0)
+    internal static void CreateSource(SourceProductionContext context, SourceWithHandlerResult result)
+    {
+        if (result.Requests.IsEmpty)
         {
             return;
         }
 
-        var sb = new StringBuilder();
-        var intentDepth = 0;
-
-        void AppendIntend()
-        {
-            for (var i = 0; i < intentDepth; i++)
-            {
-                sb.Append("    ");
-            }
-        }
+        var sb = new IndentedStringBuilder();
 
         bool TryGetVisibility(Accessibility visibility, [NotNullWhen(true)] out string? value)
         {
@@ -168,70 +268,19 @@ public class SenderGenerator : IIncrementalGenerator
             }
         }
 
-        void AppendGenericConstraints(ExtensionMethodReference request)
+        void AppendGenerics()
         {
-            if (request.Type.IsGenericType)
-            {
-                var parameters = request.Type.TypeParameters
-                    .Where(i => i.ConstraintTypes.Length > 0 || i.HasReferenceTypeConstraint ||
-                                i.HasValueTypeConstraint ||
-                                i.HasUnmanagedTypeConstraint || i.HasConstructorConstraint)
-                    .ToArray();
-
-                foreach (var parameter in parameters)
-                {
-                    AppendIntend();
-                    sb.Append("where ");
-                    sb.Append(parameter.Name);
-                    sb.Append(" : ");
-
-                    int j;
-                    for (j = 0; j < parameter.ConstraintTypes.Length; j++)
-                    {
-                        if (j > 1) sb.Append(", ");
-                        sb.AppendType(parameter.ConstraintTypes[j], false);
-                    }
-
-                    if (parameter.HasReferenceTypeConstraint)
-                    {
-                        if (j++ > 1) sb.Append(", ");
-                        sb.Append("class");
-                    }
-                    else if (parameter.HasValueTypeConstraint)
-                    {
-                        if (j++ > 1) sb.Append(", ");
-                        sb.Append("struct");
-                    }
-                    else if (parameter.HasUnmanagedTypeConstraint)
-                    {
-                        if (j++ > 1) sb.Append(", ");
-                        sb.Append("unmanaged");
-                    }
-
-                    if (parameter.HasConstructorConstraint)
-                    {
-                        if (j > 1) sb.Append(", ");
-                        sb.Append("new()");
-                    }
-
-                    sb.AppendLine();
-                }
-            }
-        }
-
-        void AppendGenerics(ExtensionMethodReference request)
-        {
-            if (!request.Type.IsGenericType)
+            if (!result.Type.IsGenericType)
             {
                 return;
             }
-            
-            var length = request.Type.TypeParameters.Length;
+
+            var length = result.Type.TypeParameters.Length;
 
             sb.Append('<');
             for (var i = 0; i < length; i++)
             {
-                var parameter = request.Type.TypeParameters[i];
+                var parameter = result.Type.TypeParameters[i];
 
                 sb.Append(parameter.Name);
 
@@ -247,295 +296,231 @@ public class SenderGenerator : IIncrementalGenerator
         sb.AppendLine("#nullable enable");
         sb.AppendLine();
 
-        // Dependency injection
-        if (compilation.GetTypeByMetadataName("Zapto.Mediator.ServiceProviderMediator") != null)
+        // Send message
+        if (result.Type.Namespace is not null)
         {
-            AppendIntend();
-            sb.AppendLine("namespace Zapto.Mediator");
-            AppendIntend();
+            sb.Append("namespace ");
+            sb.AppendLine(result.Type.Namespace);
             sb.AppendLine("{");
-            intentDepth++;
+            sb.Indent();
+        }
+
+        sb.AppendLine("public static partial class SenderExtensions");
+        sb.AppendLine("{");
+
+        sb.Indent();
+
+        foreach (var (request, handlerType) in result.Requests)
+        {
+            void AddXmlDoc()
             {
-                AppendIntend();
-                var assemblyName = compilation.Assembly.Name.Replace('.', '_');
-                sb.AppendLine("internal static class AssemblyExtensions_" + assemblyName);
-                AppendIntend();
-                sb.AppendLine("{");
-                intentDepth++;
-
-                const string builder = "global::Zapto.Mediator.IMediatorBuilder";
-
-                AppendIntend();
-                sb.AppendLine($"public static {builder} AddAssemblyHandlers(this {builder} builder)");
-                AppendIntend();
-                sb.AppendLine("{");
-                intentDepth++;
-
-                foreach (var handler in handlers)
+                if (handlerType != null)
                 {
-                    AppendIntend();
-                    
-                    if (handler.Interface.Name is "IRequestHandler")
+                    sb.AppendLine("/// <summary>");
+                    sb.Append("/// Sends a request to the handler <see cref=\"");
+                    sb.AppendType(handlerType, addNullable: false);
+                    sb.AppendLine("\"/>.");
+                    sb.AppendLine("/// </summary>");
+                }
+            }
+
+            var suffix = request.Interface.Name.RemovePrefix("I");
+            var name = result.Type.Name.RemoveSuffix(suffix);
+            var typeNames = request.Interface.TypeParameters
+                .Select((t, i) => (t.Name, Value: request.Interface.TypeArguments[i]))
+                .ToDictionary(t => t.Name, t => t.Value);
+
+            for (var i = 0; i < request.Methods.Length; i++)
+            {
+                if (i > 0)
+                {
+                    sb.AppendLine();
+                }
+
+                var (sender, type, method, _) = request.Methods[i];
+                var parameterName = method.TypeParameters[0].Name;
+                var skipConstructorWithoutParameters = result.Type.IsValueType &&
+                                                       result.Type.Constructors.Any(i => i.Parameters.Length > 0);
+
+                void AppendMethodGenerics()
+                {
+                    if (method.IsGenericMethod)
                     {
-                        sb.Append("builder.AddRequestHandler(typeof(");
-                        sb.AppendType(handler.Type, addNullable: false, addGenericNames: false);
-                        sb.AppendLine("));");
-                    }
-                    else if (handler.Interface.Name == "INotificationHandler")
-                    {
-                        sb.Append("builder.AddNotificationHandler(typeof(");
-                        sb.AppendType(handler.Type, addNullable: false, addGenericNames: false);
-                        sb.AppendLine("));");
-                    }
-                    else if (handler.Interface.Name == "IStreamRequestHandler")
-                    {
-                        sb.Append("builder.AddStreamRequestHandler(typeof(");
-                        sb.AppendType(handler.Type, addNullable: false, addGenericNames: false);
-                        sb.AppendLine("));");
+                        var length = method.TypeParameters.Length;
+
+                        sb.Append('<');
+                        for (var i = 0; i < length; i++)
+                        {
+                            var parameter = method.TypeParameters[i];
+
+                            if (parameter.Name == parameterName)
+                            {
+                                sb.AppendType(result.Type, false);
+                            }
+                            else if (typeNames.TryGetValue(parameter.Name, out var result))
+                            {
+                                sb.AppendType(result, false);
+                            }
+
+                            if (i != length - 1)
+                            {
+                                sb.Append(", ");
+                            }
+                        }
+
+                        sb.Append('>');
                     }
                 }
 
-                AppendIntend();
-                sb.AppendLine("return builder;");
-                
-                intentDepth--;
-                AppendIntend();
-                sb.AppendLine("}");
-            }
-            intentDepth--;
-            AppendIntend();
-            sb.AppendLine("}");
-            
-            intentDepth--;
-            AppendIntend();
-            sb.AppendLine("}");
-            sb.AppendLine();
-        }
-
-        // Send message
-        foreach (var group in requests.GroupBy(i => (
-            Namespace: i.Type.ContainingNamespace is { Name: null or "" } ? "" : i.Type.ContainingNamespace.ToDisplayString(),
-            Assembly: i.Type.ContainingAssembly?.Name ?? ""
-        )))
-        {
-            var hasNamespace = !string.IsNullOrWhiteSpace(group.Key.Namespace);
-
-            intentDepth = hasNamespace ? 1 : 0;
-
-            if (hasNamespace)
-            {
-                sb.Append("namespace ");
-                sb.AppendLine(group.Key.Namespace);
-                sb.AppendLine("{");
-            }
-
-            AppendIntend();
-            var assemblyName = group.Key.Assembly.Replace('.', '_');
-            sb.AppendLine($"public static class {assemblyName}SenderExtensions");
-
-            AppendIntend();
-            sb.AppendLine("{");
-
-            intentDepth++;
-
-            foreach (var request in group)
-            {
-                var suffix = request.Interface.Name.RemovePrefix("I");
-                var name = request.Type.Name.RemoveSuffix(suffix);
-                var typeNames = request.Interface.TypeParameters
-                    .Select((t, i) => (t.Name, Value: request.Interface.TypeArguments[i]))
-                    .ToDictionary(t => t.Name, t => t.Value);
-
-                foreach (var (type, method, _, _) in request.Methods)
+                if (TryGetVisibility(result.Type.DeclaredAccessibility, out var visibilityValue))
                 {
-                    var parameterName = method.TypeParameters[0].Name;
-                    var skipConstructorWithoutParameters = request.Type.IsValueType && request.Type.Constructors.Any(i => i.Parameters.Length > 0);
-                    
-
-                    void AppendMethodGenerics()
-                    {
-                        if (method.IsGenericMethod)
+                    AddXmlDoc();
+                    sb.AppendLine("[global::System.Diagnostics.DebuggerStepThrough]");
+                    sb.Append(visibilityValue);
+                    sb.Append(" static ");
+                    sb.AppendType(method.ReturnType,
+                        addNullable: false,
+                        middleware: t =>
                         {
-                            var length = method.TypeParameters.Length;
-
-                            sb.Append('<');
-                            for (var i = 0; i < length; i++)
-                            {
-                                var parameter = method.TypeParameters[i];
-
-                                if (parameter.Name == parameterName)
-                                {
-                                    sb.AppendType(request.Type, false);
-                                }
-                                else if (typeNames.TryGetValue(parameter.Name, out var result))
-                                {
-                                    sb.AppendType(result, false);
-                                }
-
-                                if (i != length - 1)
-                                {
-                                    sb.Append(", ");
-                                }
-                            }
-
-                            sb.Append('>');
-                        }
-                    }
-                    
-                    if (TryGetVisibility(request.Type.DeclaredAccessibility, out var visibilityValue))
-                    {
-                        AppendIntend();
-                        sb.Append("[global::System.Diagnostics.DebuggerStepThrough] ");
-                        sb.Append(visibilityValue);
-                        sb.Append(" static ");
-                        sb.AppendType(method.ReturnType,
-                            addNullable: false,
-                            middleware: t =>
-                            {
-                                if (!typeNames.TryGetValue(t.Name, out var result))
-                                {
-                                    return false;
-                                }
-
-                                sb.AppendType(result, addNullable: false);
-                                return true;
-                            });
-                        sb.Append(' ');
-                        sb.Append(name);
-                        sb.Append("Async");
-                        AppendGenerics(request);
-                        sb.Append("(this ");
-                        sb.AppendType(type, false);
-                        sb.Append(" sender, ");
-                        sb.AppendParameterDefinitions(method.Parameters, t =>
-                        {
-                            if (t.Type.Name == parameterName)
-                            {
-                                sb.AppendType(request.Type, addNullable: false);
-                                return AppendResult.Type;
-                            }
-                            
-                            if (typeNames.TryGetValue(t.Type.Name, out var typeName))
-                            {
-                                sb.AppendType(typeName);
-                                return AppendResult.Type;
-                            }
-
-                            return AppendResult.None;
-                        });
-                        sb.AppendLine(")");
-
-                        intentDepth++;
-
-                        AppendGenericConstraints(request);
-
-                        AppendIntend();
-                        sb.Append("=> sender.");
-                        sb.Append(method.Name);
-                        AppendMethodGenerics();
-                        sb.Append('(');
-                        sb.AppendParameters(method.Parameters);
-                        sb.AppendLine(");");
-                        intentDepth--;
-                    }
-
-                    foreach (var constructor in request.Type.Constructors)
-                    {
-                        if (skipConstructorWithoutParameters && constructor.Parameters.Length == 0)
-                        {
-                            continue;
-                        }
-
-                        var visibility = constructor.DeclaredAccessibility.GetLowest(request.Accessibility);
-
-                        if (!TryGetVisibility(visibility, out visibilityValue))
-                        {
-                            continue;
-                        }
-
-                        AppendIntend();
-                        sb.Append("[global::System.Diagnostics.DebuggerStepThrough] ");
-                        sb.Append(visibilityValue);
-                        sb.Append(" static ");
-                        sb.AppendType(method.ReturnType,
-                            addNullable: false,
-                            middleware: t =>
-                            {
-                                if (!typeNames.TryGetValue(t.Name, out var result))
-                                {
-                                    return false;
-                                }
-
-                                sb.AppendType(result, addNullable: false);
-                                return true;
-                            });
-
-                        sb.Append(' ');
-                        sb.Append(name);
-                        sb.Append("Async");
-                        AppendGenerics(request);
-                        sb.Append("(this ");
-                        sb.AppendType(type, false);
-                        sb.Append(" sender, ");
-                        sb.AppendParameterDefinitions(method.Parameters, t =>
-                        {
-                            if (t.Type.Name == parameterName)
-                            {
-                                sb.AppendParameterDefinitions(constructor.Parameters);
-                                return AppendResult.TypeAndName;
-                            }
-
-                            if (typeNames.TryGetValue(t.Type.Name, out var typeName))
-                            {
-                                sb.AppendType(typeName);
-                                return AppendResult.Type;
-                            }
-
-                            return AppendResult.None;
-                        });
-                        sb.AppendLine(")");
-
-                        intentDepth++;
-
-                        AppendGenericConstraints(request);
-
-                        AppendIntend();
-                        sb.Append("=> sender.");
-                        sb.Append(method.Name);
-                        AppendMethodGenerics();
-
-                        sb.Append('(');
-                        sb.AppendParameters(method.Parameters, t =>
-                        {
-                            if (t.Type.Name != parameterName)
+                            if (!typeNames.TryGetValue(t.Name, out var result))
                             {
                                 return false;
                             }
 
-                            sb.Append("new ");
-                            sb.AppendType(request.Type, false);
-                            sb.Append('(');
-                            sb.AppendParameters(constructor.Parameters);
-                            sb.Append(')');
+                            sb.AppendType(result, addNullable: false);
                             return true;
                         });
-                        sb.AppendLine(");");
-                        intentDepth--;
-                    }
+                    sb.Append(' ');
+                    sb.Append(name);
+                    sb.Append("Async");
+                    AppendGenerics();
+                    sb.Append("(this ");
+                    sb.AppendType(sender, false);
+                    sb.Append(" sender, ");
+                    sb.AppendParameterDefinitions(method.Parameters, t =>
+                    {
+                        if (t.Type.Name == parameterName)
+                        {
+                            sb.AppendType(result.Type, addNullable: false);
+                            return AppendResult.Type;
+                        }
+
+                        if (typeNames.TryGetValue(t.Type.Name, out var typeName))
+                        {
+                            sb.AppendType(typeName);
+                            return AppendResult.Type;
+                        }
+
+                        return AppendResult.None;
+                    });
+                    sb.AppendLine(")");
+
+                    sb.Indent();
+                    sb.AppendGenericConstraints(result.Type);
+                    sb.Dedent();
+
+                    sb.Append("=> sender.");
+                    sb.Append(method.Name);
+                    AppendMethodGenerics();
+                    sb.Append('(');
+                    sb.AppendParameters(method.Parameters);
+                    sb.AppendLine(");");
                 }
-            }
 
-            intentDepth--;
+                foreach (var constructor in result.Type.Constructors)
+                {
+                    if (skipConstructorWithoutParameters && constructor.Parameters.Length == 0)
+                    {
+                        continue;
+                    }
 
-            AppendIntend();
-            sb.AppendLine("}");
+                    var visibility = constructor.DeclaredAccessibility.GetLowest(request.Accessibility);
 
-            if (hasNamespace)
-            {
-                sb.AppendLine("}");
+                    if (!TryGetVisibility(visibility, out visibilityValue))
+                    {
+                        continue;
+                    }
+
+                    sb.AppendLine();
+                    AddXmlDoc();
+                    sb.AppendLine("[global::System.Diagnostics.DebuggerStepThrough]");
+                    sb.Append(visibilityValue);
+                    sb.Append(" static ");
+                    sb.AppendType(method.ReturnType,
+                        addNullable: false,
+                        middleware: t =>
+                        {
+                            if (!typeNames.TryGetValue(t.Name, out var result))
+                            {
+                                return false;
+                            }
+
+                            sb.AppendType(result, addNullable: false);
+                            return true;
+                        });
+
+                    sb.Append(' ');
+                    sb.Append(name);
+                    sb.Append("Async");
+                    AppendGenerics();
+                    sb.Append("(this ");
+                    sb.AppendType(sender, false);
+                    sb.Append(" sender, ");
+                    sb.AppendParameterDefinitions(method.Parameters, t =>
+                    {
+                        if (t.Type.Name == parameterName)
+                        {
+                            sb.AppendParameterDefinitions(constructor.Parameters);
+                            return AppendResult.TypeAndName;
+                        }
+
+                        if (typeNames.TryGetValue(t.Type.Name, out var typeName))
+                        {
+                            sb.AppendType(typeName);
+                            return AppendResult.Type;
+                        }
+
+                        return AppendResult.None;
+                    });
+                    sb.AppendLine(")");
+
+                    sb.Indent();
+                    sb.AppendGenericConstraints(result.Type);
+                    sb.Dedent();
+
+                    sb.Append("=> sender.");
+                    sb.Append(method.Name);
+                    AppendMethodGenerics();
+
+                    sb.Append('(');
+                    sb.AppendParameters(method.Parameters, t =>
+                    {
+                        if (t.Type.Name != parameterName)
+                        {
+                            return false;
+                        }
+
+                        sb.Append("new ");
+                        sb.AppendType(result.Type, false);
+                        sb.Append('(');
+                        sb.AppendParameters(constructor.Parameters);
+                        sb.Append(')');
+                        return true;
+                    });
+                    sb.AppendLine(");");
+                }
             }
         }
 
-        context.AddSource("MediatorExtensions.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
+        sb.Dedent();
+        sb.AppendLine("}");
+
+        if (result.Type.Namespace is not null)
+        {
+            sb.Dedent();
+            sb.AppendLine("}");
+        }
+
+        context.AddSource($"{result.Type.UniqueId}_Extensions.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
     }
 }
