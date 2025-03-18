@@ -2,11 +2,11 @@
 Note: [like MediatR](https://github.com/jbogard/MediatR.Extensions.Microsoft.DependencyInjection/blob/master/README.md), all handlers are registered as transient with the exception of delegate handlers.
 
 ```
-BenchmarkDotNet=v0.13.1, OS=Windows 10.0.22000 (Windows 11)
-AMD Ryzen 9 5950X, 1 CPU, 32 logical and 16 physical cores
-.NET SDK=6.0.201
-  [Host]     : .NET 6.0.3 (6.0.322.12309), X64 RyuJIT
-  DefaultJob : .NET 6.0.3 (6.0.322.12309), X64 RyuJIT
+BenchmarkDotNet v0.14.0, Windows 11 (10.0.26100.3476)
+AMD Ryzen 9 5900X, 1 CPU, 24 logical and 12 physical cores
+.NET SDK 9.0.200
+  [Host]     : .NET 8.0.11 (8.0.1124.51707), X64 RyuJIT AVX2
+  DefaultJob : .NET 8.0.11 (8.0.1124.51707), X64 RyuJIT AVX2
 ```
 
 ## Results
@@ -15,30 +15,30 @@ AMD Ryzen 9 5950X, 1 CPU, 32 logical and 16 physical cores
 public record Ping : IRequest<string>;
 ```
 
-|              Method |       Mean |     Error |    StdDev | Ratio | RatioSD |  Gen 0 | Allocated |
-|-------------------- |-----------:|----------:|----------:|------:|--------:|-------:|----------:|
-| Handler_AsInterface |  11.059 ns | 0.0446 ns | 0.0372 ns |  1.00 |    0.00 | 0.0014 |      24 B |
-|     Handler_AsClass |   7.724 ns | 0.0321 ns | 0.0251 ns |  0.70 |    0.00 |      - |         - |
-|   MediatR_Interface | 504.845 ns | 2.0148 ns | 1.7860 ns | 45.66 |    0.18 | 0.0849 |   1,424 B |
-|      MediatR_Object | 541.339 ns | 2.7988 ns | 2.4810 ns | 48.93 |    0.26 | 0.0887 |   1,496 B |
-|       Zapto_Generic |  35.229 ns | 0.1626 ns | 0.1441 ns |  3.18 |    0.02 | 0.0029 |      48 B |
-|     Zapto_Interface |  64.481 ns | 0.4158 ns | 0.3472 ns |  5.83 |    0.03 | 0.0081 |     136 B |
-|        Zapto_Object |  85.953 ns | 0.5875 ns | 0.5495 ns |  7.77 |    0.06 | 0.0081 |     136 B |
+| Method              | Mean       | Error     | StdDev    | Ratio | RatioSD | Gen0   | Allocated | Alloc Ratio |
+|-------------------- |-----------:|----------:|----------:|------:|--------:|-------:|----------:|------------:|
+| Handler_AsInterface |   1.598 ns | 0.0037 ns | 0.0031 ns |  1.00 |    0.00 |      - |         - |          NA |
+| Handler_AsClass     |   1.395 ns | 0.0060 ns | 0.0057 ns |  0.87 |    0.00 |      - |         - |          NA |
+| MediatR_Interface   |  92.354 ns | 0.6991 ns | 0.5838 ns | 57.79 |    0.37 | 0.0200 |     336 B |          NA |
+| MediatR_Object      | 150.164 ns | 0.9268 ns | 0.8669 ns | 93.97 |    0.55 | 0.0243 |     408 B |          NA |
+| Zapto_Generic       |  58.938 ns | 0.3907 ns | 0.3463 ns | 36.88 |    0.22 | 0.0043 |      72 B |          NA |
+| Zapto_Interface     |  82.303 ns | 0.1812 ns | 0.1414 ns | 51.50 |    0.13 | 0.0057 |      96 B |          NA |
+| Zapto_Object        |  98.160 ns | 0.4481 ns | 0.4192 ns | 61.43 |    0.28 | 0.0057 |      96 B |          NA |
 
 ### Empty Struct
 ```csharp
 public record struct Ping : IRequest<string>;
 ```
 
-|              Method |       Mean |     Error |    StdDev | Ratio | RatioSD |  Gen 0 | Allocated |
-|-------------------- |-----------:|----------:|----------:|------:|--------:|-------:|----------:|
-| Handler_AsInterface |   9.463 ns | 0.0331 ns | 0.0309 ns |  1.00 |    0.00 |      - |         - |
-|     Handler_AsClass |   9.583 ns | 0.0346 ns | 0.0324 ns |  1.01 |    0.00 |      - |         - |
-|   MediatR_Interface | 509.057 ns | 2.5120 ns | 2.2268 ns | 53.81 |    0.29 | 0.0849 |   1,424 B |
-|      MediatR_Object | 530.815 ns | 4.1636 ns | 3.6909 ns | 56.12 |    0.45 | 0.0887 |   1,496 B |
-|       Zapto_Generic |  34.860 ns | 0.1928 ns | 0.1709 ns |  3.69 |    0.03 | 0.0014 |      24 B |
-|     Zapto_Interface |  63.125 ns | 0.5586 ns | 0.4952 ns |  6.67 |    0.05 | 0.0081 |     136 B |
-|        Zapto_Object |  82.246 ns | 0.5049 ns | 0.4723 ns |  8.69 |    0.05 | 0.0081 |     136 B |
+| Method              | Mean       | Error     | StdDev    | Ratio | RatioSD | Gen0   | Allocated | Alloc Ratio |
+|-------------------- |-----------:|----------:|----------:|------:|--------:|-------:|----------:|------------:|
+| Handler_AsInterface |   1.620 ns | 0.0090 ns | 0.0084 ns |  1.00 |    0.01 |      - |         - |          NA |
+| Handler_AsClass     |   1.399 ns | 0.0032 ns | 0.0026 ns |  0.86 |    0.00 |      - |         - |          NA |
+| MediatR_Interface   |  96.538 ns | 0.5650 ns | 0.5285 ns | 59.58 |    0.43 | 0.0200 |     336 B |          NA |
+| MediatR_Object      | 119.866 ns | 1.3861 ns | 1.2965 ns | 73.98 |    0.86 | 0.0243 |     408 B |          NA |
+| Zapto_Generic       |  57.964 ns | 0.4733 ns | 0.4428 ns | 35.77 |    0.32 | 0.0043 |      72 B |          NA |
+| Zapto_Interface     |  80.184 ns | 0.4094 ns | 0.3630 ns | 49.49 |    0.33 | 0.0057 |      96 B |          NA |
+| Zapto_Object        |  95.497 ns | 0.4405 ns | 0.4120 ns | 58.94 |    0.38 | 0.0057 |      96 B |          NA |
 
 ## Explanation
 ### Handler
@@ -92,13 +92,13 @@ var response = await _mediator.Send(request);
 It's possible to register handlers different ways.
 
 ## Results
-|             Method |      Mean |    Error |   StdDev | Ratio | RatioSD |  Gen 0 | Allocated |
-|------------------- |----------:|---------:|---------:|------:|--------:|-------:|----------:|
-|              Class |  33.79 ns | 0.168 ns | 0.157 ns |  1.00 |    0.00 | 0.0014 |      24 B |
-|    Class_Namespace |  87.82 ns | 1.062 ns | 0.993 ns |  2.60 |    0.02 | 0.0086 |     144 B |
-|           Delegate |  34.29 ns | 0.094 ns | 0.088 ns |  1.01 |    0.00 |      - |         - |
-| Delegate_Namespace |  64.41 ns | 0.476 ns | 0.445 ns |  1.91 |    0.01 | 0.0072 |     120 B |
-|            Generic | 133.90 ns | 0.568 ns | 0.503 ns |  3.96 |    0.02 | 0.0057 |      96 B |
+| Method             | Mean      | Error    | StdDev   | Ratio | RatioSD | Gen0   | Allocated | Alloc Ratio |
+|------------------- |----------:|---------:|---------:|------:|--------:|-------:|----------:|------------:|
+| Class              |  57.88 ns | 0.240 ns | 0.213 ns |  1.00 |    0.01 | 0.0043 |      72 B |        1.00 |
+| Class_Namespace    | 128.26 ns | 0.911 ns | 0.852 ns |  2.22 |    0.02 | 0.0134 |     224 B |        3.11 |
+| Delegate           |  58.41 ns | 0.245 ns | 0.229 ns |  1.01 |    0.01 | 0.0029 |      48 B |        0.67 |
+| Delegate_Namespace | 118.62 ns | 0.815 ns | 0.762 ns |  2.05 |    0.01 | 0.0119 |     200 B |        2.78 |
+| Generic            | 112.39 ns | 0.533 ns | 0.473 ns |  1.94 |    0.01 | 0.0091 |     152 B |        2.11 |
 
 ## Explanation
 ### Class
@@ -146,3 +146,15 @@ public class ReturnStructGenericHandlerZapto<T> : IRequestHandler<ReturnStructGe
 
 services.AddRequestHandler(typeof(ReturnStructGenericHandlerZapto<>));
 ```
+
+# Pipeline behavior
+It's possible to add a pipeline behavior to the mediator. This can be used to add logging, validation, etc.
+
+## Results
+| Method            | Mean     | Error   | StdDev  | Gen0   | Allocated |
+|------------------ |---------:|--------:|--------:|-------:|----------:|
+| MediatR_Interface | 187.0 ns | 2.12 ns | 1.99 ns | 0.0377 |     632 B |
+| MediatR_Object    | 212.5 ns | 2.23 ns | 2.09 ns | 0.0420 |     704 B |
+| Zapto_Generic     | 129.3 ns | 0.81 ns | 0.76 ns | 0.0234 |     392 B |
+| Zapto_Interface   | 168.3 ns | 0.95 ns | 0.89 ns | 0.0234 |     392 B |
+| Zapto_Object      | 174.3 ns | 1.15 ns | 1.08 ns | 0.0234 |     392 B |

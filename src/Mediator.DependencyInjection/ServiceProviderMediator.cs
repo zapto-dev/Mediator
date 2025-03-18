@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -24,16 +25,33 @@ public class ServiceProviderMediator : PublisherBase, IMediator
     }
 
     /// <inheritdoc />
-    public ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    public ValueTask Send(IRequest request, CancellationToken cancellationToken = default)
     {
-        var handler = RequestWrapper.Get<TResponse>(request.GetType());
+        var handler = RequestWrapper.GetWithoutResponse(request.GetType());
 
         return handler.Handle(request, cancellationToken, this);
     }
 
+    /// <inheritdoc />
+    public ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    {
+        var handler = RequestWrapper.GetWithResponse<TResponse>(request.GetType());
+
+        return handler.Handle(request, cancellationToken, this);
+    }
+
+    /// <inheritdoc />
+    public ValueTask Send(MediatorNamespace ns, IRequest request, CancellationToken cancellationToken = default)
+    {
+        var handler = RequestWrapper.GetWithoutResponse(request.GetType());
+
+        return handler.Handle(ns, request, cancellationToken, this);
+    }
+
+    /// <inheritdoc />
     public ValueTask<TResponse> Send<TResponse>(MediatorNamespace ns, IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        var handler = RequestWrapper.Get<TResponse>(request.GetType());
+        var handler = RequestWrapper.GetWithResponse<TResponse>(request.GetType());
 
         return handler.Handle(ns, request, cancellationToken, this);
     }
@@ -41,16 +59,31 @@ public class ServiceProviderMediator : PublisherBase, IMediator
     /// <inheritdoc />
     public ValueTask<object?> Send(object request, CancellationToken cancellationToken = default)
     {
-        var handler = RequestWrapper.Get(request.GetType());
+        var handler = RequestWrapper.GetWithResponse(request.GetType());
 
         return handler.Handle(request, cancellationToken, this);
     }
 
+    /// <inheritdoc />
     public ValueTask<object?> Send(MediatorNamespace ns, object request, CancellationToken cancellationToken = default)
     {
-        var handler = RequestWrapper.Get(request.GetType());
+        var handler = RequestWrapper.GetWithResponse(request.GetType());
 
         return handler.Handle(ns, request, cancellationToken, this);
+    }
+
+    /// <inheritdoc />
+    public ValueTask Send<TRequest>(TRequest request, CancellationToken cancellationToken = default) where TRequest : IRequest
+    {
+        var handler = _provider.GetRequiredService<IRequestHandler<TRequest>>();
+        var pipeline = _provider.GetServices<IPipelineBehavior<TRequest, Unit>>();
+
+        if (pipeline is IPipelineBehavior<TRequest, Unit>[] array)
+        {
+            return SendWithPipelineArray(request, array, handler, cancellationToken);
+        }
+
+        return SendWithPipelineEnumerable(request, handler, pipeline, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -62,6 +95,106 @@ public class ServiceProviderMediator : PublisherBase, IMediator
         return pipeline is IPipelineBehavior<TRequest, TResponse>[] array
             ? SendWithPipelineArray(request, array, handler, cancellationToken)
             : SendWithPipelineEnumerable(request, handler, pipeline, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask Send<TRequest>(MediatorNamespace ns, TRequest request, CancellationToken cancellationToken = default) where TRequest : IRequest
+    {
+        var namespaceHandler = _provider
+            .GetServices<INamespaceRequestHandler<TRequest>>()
+            .FirstOrDefault(i => i.Namespace == ns);
+
+        if (namespaceHandler == null)
+        {
+            throw new NamespaceHandlerNotFoundException();
+        }
+
+        var pipeline = _provider.GetServices<IPipelineBehavior<TRequest, Unit>>();
+        var handler = namespaceHandler.GetHandler(_provider);
+
+        if (pipeline is IPipelineBehavior<TRequest, Unit>[] array)
+        {
+            await SendWithPipelineArray(request, array, handler, cancellationToken);
+        }
+        else
+        {
+            await SendWithPipelineEnumerable(request, handler, pipeline, cancellationToken);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ValueTask<Unit> Wrap(ValueTask task)
+    {
+        return task.IsCompletedSuccessfully
+            ? new ValueTask<Unit>(Unit.Value)
+            : Awaited(task);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static async ValueTask<Unit> Awaited(ValueTask task)
+        {
+            await task;
+            return Unit.Value;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ValueTask Unwrap(ValueTask<Unit> task)
+    {
+        return task.IsCompletedSuccessfully
+            ? default
+            : Awaited(task);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static async ValueTask Awaited(ValueTask<Unit> task)
+        {
+            await task;
+        }
+    }
+
+    private ValueTask SendWithPipelineArray<TRequest>(
+        TRequest request,
+        IPipelineBehavior<TRequest, Unit>[] array,
+        IRequestHandler<TRequest> handler,
+        CancellationToken cancellationToken
+    ) where TRequest : IRequest
+    {
+        var generic = _provider.GetRequiredService<GenericPipelineBehavior<TRequest, Unit>>();
+
+        if (array.Length == 0 && generic.IsEmpty)
+        {
+            return handler.Handle(_provider, request, cancellationToken);
+        }
+
+        RequestHandlerDelegate<Unit> next = () => Wrap(handler.Handle(_provider, request, cancellationToken));
+
+        for (var i = array.Length - 1; i >= 0; i--)
+        {
+            var pipelineBehavior = array[i];
+            var nextPipeline = next;
+            next = () => pipelineBehavior.Handle(_provider, request, nextPipeline, cancellationToken);
+        }
+
+        return Unwrap(generic.Handle(_provider, request, next, cancellationToken));
+    }
+
+    private ValueTask SendWithPipelineEnumerable<TRequest>(
+        TRequest request,
+        IRequestHandler<TRequest> handler,
+        IEnumerable<IPipelineBehavior<TRequest, Unit>> pipeline,
+        CancellationToken cancellationToken
+    ) where TRequest : IRequest
+    {
+        var generic = _provider.GetRequiredService<GenericPipelineBehavior<TRequest, Unit>>();
+
+        RequestHandlerDelegate<Unit> next = () => Wrap(handler.Handle(_provider, request, cancellationToken));
+
+        foreach (var pipelineBehavior in pipeline.Reverse())
+        {
+            var nextPipeline = next;
+            next = () => pipelineBehavior.Handle(_provider, request, nextPipeline, cancellationToken);
+        }
+
+        return Unwrap(generic.Handle(_provider, request, next, cancellationToken));
     }
 
     /// <inheritdoc />
@@ -131,12 +264,14 @@ public class ServiceProviderMediator : PublisherBase, IMediator
         return generic.Handle(_provider, request, next, cancellationToken);
     }
 
+    /// <inheritdoc />
     public IAsyncEnumerable<TResponse> CreateStream<TResponse>(MediatorNamespace ns, IStreamRequest<TResponse> request,
         CancellationToken cancellationToken = default)
     {
         return StreamRequestWrapper.Get<TResponse>(request.GetType()).Handle(ns, request, cancellationToken, this);
     }
 
+    /// <inheritdoc />
     public IAsyncEnumerable<object?> CreateStream(MediatorNamespace ns, object request, CancellationToken cancellationToken = default)
     {
         return StreamRequestWrapper.Get(request.GetType()).Handle(ns, request, cancellationToken, this);

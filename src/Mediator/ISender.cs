@@ -13,11 +13,28 @@ public interface ISender
     /// <summary>
     /// Asynchronously send a request to a single handler
     /// </summary>
+    /// <param name="request">Request object</param>
+    /// <param name="cancellationToken">Optional cancellation token</param>
+    /// <returns>A task that represents the send operation. The task result contains the handler response</returns>
+    ValueTask Send(IRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Asynchronously send a request to a single handler
+    /// </summary>
     /// <typeparam name="TResponse">Response type</typeparam>
     /// <param name="request">Request object</param>
     /// <param name="cancellationToken">Optional cancellation token</param>
     /// <returns>A task that represents the send operation. The task result contains the handler response</returns>
     ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Asynchronously send a request to a single handler
+    /// </summary>
+    /// <param name="ns">Namespace of the notification</param>
+    /// <param name="request">Request object</param>
+    /// <param name="cancellationToken">Optional cancellation token</param>
+    /// <returns>A task that represents the send operation. The task result contains the handler response</returns>
+    ValueTask Send(MediatorNamespace ns, IRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Asynchronously send a request to a single handler
@@ -49,6 +66,16 @@ public interface ISender
     /// <summary>
     /// Asynchronously send a request to a single handler
     /// </summary>
+    /// <typeparam name="TRequest">Request type</typeparam>
+    /// <param name="request">Request object</param>
+    /// <param name="cancellationToken">Optional cancellation token</param>
+    /// <returns>A task that represents the send operation. The task result contains the handler response</returns>
+    ValueTask Send<TRequest>(TRequest request, CancellationToken cancellationToken = default)
+        where TRequest : IRequest;
+
+    /// <summary>
+    /// Asynchronously send a request to a single handler
+    /// </summary>
     /// <typeparam name="TResponse">Response type</typeparam>
     /// <typeparam name="TRequest">Request type</typeparam>
     /// <param name="request">Request object</param>
@@ -56,6 +83,17 @@ public interface ISender
     /// <returns>A task that represents the send operation. The task result contains the handler response</returns>
     ValueTask<TResponse> Send<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
         where TRequest : IRequest<TResponse>;
+
+    /// <summary>
+    /// Asynchronously send a request to a single handler
+    /// </summary>
+    /// <typeparam name="TRequest">Request type</typeparam>
+    /// <param name="ns">Namespace of the request</param>
+    /// <param name="request">Request object</param>
+    /// <param name="cancellationToken">Optional cancellation token</param>
+    /// <returns>A task that represents the send operation. The task result contains the handler response</returns>
+    ValueTask Send<TRequest>(MediatorNamespace ns, TRequest request, CancellationToken cancellationToken = default)
+        where TRequest : IRequest;
 
     /// <summary>
     /// Asynchronously send a request to a single handler

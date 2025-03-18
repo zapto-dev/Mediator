@@ -57,7 +57,10 @@ public class SenderGenerator : IIncrementalGenerator
                         request.Interface.Name == "IRequest" &&
                         i.Handler.Interface.Name == "IRequestHandler" &&
                         i.Handler.Interface.TypeArguments[0].SimpleEquals(requestType) &&
-                        i.Handler.Interface.TypeArguments[1].SimpleEquals(request.Interface.TypeArguments[0]));
+                        (
+                            i.Handler.Interface.TypeArguments.Length == 1 ||
+                            i.Handler.Interface.TypeArguments[1].SimpleEquals(request.Interface.TypeArguments[0])
+                        ));
 
                     builder.Add((request, handlerType));
                 }
@@ -175,7 +178,7 @@ public class SenderGenerator : IIncrementalGenerator
         foreach (var current in symbol.AllInterfaces)
         {
             if (current.Name is ("IRequest" or "INotification" or "IStreamRequest") &&
-                (methodsByType ??= GetInterfaceMethods(compilation)).TryGetValue((current.GetNamespace(), current.Name), out var results) &&
+                (methodsByType ??= GetInterfaceMethods(compilation)).TryGetValue((current.GetNamespace(), GetName(current)), out var results) &&
                 results.Any(i => i.Type.IsGenericType == current.IsGenericType && i.Type.TypeArguments.Length == current.TypeArguments.Length))
             {
                 requests.Add(new ExtensionMethodReference(
@@ -189,6 +192,7 @@ public class SenderGenerator : IIncrementalGenerator
                 current.IsGenericType &&
                 current
                     is { Name: "IRequestHandler", TypeArguments.Length: 2 }
+                    or { Name: "IRequestHandler", TypeArguments.Length: 1 }
                     or { Name: "INotificationHandler", TypeArguments.Length: 1 }
                     or { Name: "IStreamRequestHandler", TypeArguments.Length: 2 } &&
                 !symbol.GetAttributes().Any(i => i.AttributeClass?.Name == "IgnoreHandlerAttribute"))
@@ -211,6 +215,11 @@ public class SenderGenerator : IIncrementalGenerator
         );
     }
 
+    private static string GetName(INamedTypeSymbol type)
+    {
+        return type.Name + (type.IsGenericType ? "`" + type.TypeArguments.Length : "");
+    }
+
     private static Dictionary<(string Namespace, string Type), EquatableArray<ExtensionMethod>> GetInterfaceMethods(Compilation compilation)
     {
         var types = Interfaces
@@ -223,7 +232,7 @@ public class SenderGenerator : IIncrementalGenerator
                             j.TypeParameters[0].ConstraintTypes.Length > 0)
                 .Select(m =>
                 {
-                    var type = m.TypeParameters[0].ConstraintTypes[0];
+                    var type = (INamedTypeSymbol) m.TypeParameters[0].ConstraintTypes[0];
 
                     return new ExtensionMethod(
                         ContainingMethod: SimpleType.FromSymbol(m.ContainingType),
@@ -231,7 +240,7 @@ public class SenderGenerator : IIncrementalGenerator
                         Method: SimpleMethod.FromSymbol(m),
                         ParameterType: (
                             Namespace: type.GetNamespace(),
-                            Type: type.Name
+                            Type: GetName(type)
                         )
                     );
                 }));

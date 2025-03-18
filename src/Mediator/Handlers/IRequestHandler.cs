@@ -30,30 +30,38 @@ public interface IRequestHandler<in TRequest, TResponse> : IRequestHandler
 /// You do not need to register this interface explicitly with a container as it inherits from the base <see cref="IRequestHandler{TRequest, TResponse}" /> interface.
 /// </summary>
 /// <typeparam name="TRequest">The type of request being handled</typeparam>
-public interface IRequestHandler<in TRequest> : IRequestHandler<TRequest, Unit>
-    where TRequest : IRequest<Unit>;
+public interface IRequestHandler<in TRequest>
+    where TRequest : IRequest
+{
+    /// <summary>
+    /// Handles a request
+    /// </summary>
+    /// <param name="provider">Current service provider</param>
+    /// <param name="request">The request</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    ValueTask Handle(IServiceProvider provider, TRequest request, CancellationToken cancellationToken);
+}
 
 /// <summary>
 /// Wrapper class for a handler that asynchronously handles a request and does not return a response
 /// </summary>
 /// <typeparam name="TRequest">The type of request being handled</typeparam>
 public abstract class AsyncRequestHandler<TRequest> : IRequestHandler<TRequest>
-    where TRequest : IRequest<Unit>
+    where TRequest : IRequest
 {
-    async ValueTask<Unit> IRequestHandler<TRequest, Unit>.Handle(IServiceProvider provider, TRequest request, CancellationToken cancellationToken)
+    async ValueTask IRequestHandler<TRequest>.Handle(IServiceProvider provider, TRequest request, CancellationToken cancellationToken)
     {
         await Handle(provider, request, cancellationToken).ConfigureAwait(false);
-        return Unit.Value;
     }
 
     /// <summary>
     /// Override in a derived class for the handler logic
     /// </summary>
-    /// <param name="provider">Current service provider</param>
+    /// <param name="serviceProvider">Current service provider</param>
     /// <param name="request">Request</param>
     /// <param name="cancellationToken"></param>
     /// <returns>Response</returns>
-    protected abstract Task Handle(IServiceProvider serviceProvider, TRequest request, CancellationToken cancellationToken);
+    protected abstract ValueTask Handle(IServiceProvider serviceProvider, TRequest request, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -82,9 +90,9 @@ public abstract class RequestHandler<TRequest, TResponse> : IRequestHandler<TReq
 /// </summary>
 /// <typeparam name="TRequest">The type of request being handled</typeparam>
 public abstract class RequestHandler<TRequest> : IRequestHandler<TRequest>
-    where TRequest : IRequest<Unit>
+    where TRequest : IRequest
 {
-    ValueTask<Unit> IRequestHandler<TRequest, Unit>.Handle(IServiceProvider provider, TRequest request,
+    ValueTask IRequestHandler<TRequest>.Handle(IServiceProvider provider, TRequest request,
         CancellationToken cancellationToken)
     {
         Handle(provider, request);

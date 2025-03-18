@@ -9,19 +9,18 @@ Zapto.Mediator:
 1. Only supports `Microsoft.Extensions.DependencyInjection`.
 2. Requires you to specify types with `ISender.Send<TRequest, TResponse>(new TRequest())` to avoid boxing.  
    To make it easier you can use Zapto.Mediator.SourceGenerator to generate extension methods (e.g. `ISender.RequestAsync()`).
-3. Does **not** support pipelines (yet).
-4. Allows you to use [C# 10 delegates](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-10.0/lambda-improvements).
-5. Allows you to use request namespaces (multiple request handlers under a different namespace).
-6. Uses `ValueTask` instead of `Task`.
-7. Generic support
+3. Allows you to use [C# 10 delegates](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-10.0/lambda-improvements).
+4. Allows you to use request namespaces (multiple request handlers under a different namespace).
+5. Uses `ValueTask` instead of `Task`.
+6. Generic support
 
 ## Benchmark
 For more details and more benchmarks, see [Benchmarks.md](Benchmarks.md).
 
-|      Method |       Mean |     Error |    StdDev | Ratio | RatioSD |  Gen 0 | Allocated |
-|------------ |-----------:|----------:|----------:|------:|--------:|-------:|----------:|
-|     MediatR | 504.845 ns | 2.0148 ns | 1.7860 ns | 45.66 |    0.18 | 0.0849 |   1,424 B |
-|       Zapto |  35.229 ns | 0.1626 ns | 0.1441 ns |  3.18 |    0.02 | 0.0029 |      48 B |
+| Method  | Mean       | Error     | StdDev    | Ratio | RatioSD | Gen0   | Allocated |
+|--------:|-----------:|----------:|----------:|------:|--------:|-------:|----------:|
+| MediatR | 150.164 ns | 0.9268 ns | 0.8669 ns | 93.97 |    0.55 | 0.0243 |     408 B |
+| Zapto   |  58.938 ns | 0.3907 ns | 0.3463 ns | 36.88 |    0.22 | 0.0043 |      72 B |
 
 ## Example
 ```csharp
