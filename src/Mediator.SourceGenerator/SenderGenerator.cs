@@ -18,7 +18,7 @@ public class SenderGenerator : IIncrementalGenerator
     private static readonly string[] Interfaces =
     {
         "Zapto.Mediator.ISender",
-        "Zapto.Mediator.IPublisher"
+        "Zapto.Mediator.IPublisherBase"
     };
 
     public SenderGenerator()

@@ -21,7 +21,10 @@ public class RequestBenchmark
     {
         var services = new ServiceCollection();
 
-        services.AddMediatR(typeof(Program).Assembly);
+        services.AddMediatR(configuration =>
+        {
+            configuration.RegisterServicesFromAssembly(typeof(Program).Assembly);
+        });
 
         var builder = services.AddMediator();
         builder.AddRequestHandler<Ping, string, PingHandlerZapto>();

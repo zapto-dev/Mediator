@@ -134,6 +134,51 @@ public class NotificationTest
         Assert.Equal(1, handler.Count);
     }
 
+    [Fact]
+    public async Task BackgroundPublisher()
+    {
+        var before = Substitute.For<INotificationHandler<Notification>>();
+        var after = Substitute.For<INotificationHandler<Notification>>();
+        var tcs = new TaskCompletionSource<object?>();
+
+        var tcsBefore = new TaskCompletionSource<object?>();
+        var tcsAfter = new TaskCompletionSource<object?>();
+
+        var serviceProvider = new ServiceCollection()
+            .AddMediator(b =>
+            {
+                b.AddNotificationHandler(before);
+                b.AddNotificationHandler((Notification _) => tcsBefore.SetResult(null));
+                b.AddNotificationHandler((Notification _) => tcs.Task);
+                b.AddNotificationHandler(after);
+                b.AddNotificationHandler((Notification _) => tcsAfter.SetResult(null));
+            })
+            .BuildServiceProvider();
+
+        var publisher = serviceProvider.GetRequiredService<IPublisher>();
+        var timeOutTask = Task.Delay(3000);
+        var resultTask = await Task.WhenAny(
+            publisher.Background.Publish(new Notification()).AsTask(),
+            timeOutTask);
+
+        // Ensure that the task completes in the background.
+        Assert.NotEqual(timeOutTask, resultTask);
+
+        // Ensure that the before handler is called.
+        Assert.Equal(tcsBefore.Task, await Task.WhenAny(tcsBefore.Task, Task.Delay(1000)));
+
+        // Before should be called, but after should not.
+        _ = before.Received(1).Handle(Arg.Any<IServiceProvider>(), Arg.Any<Notification>(), Arg.Any<CancellationToken>());
+        _ = after.DidNotReceive().Handle(Arg.Any<IServiceProvider>(), Arg.Any<Notification>(), Arg.Any<CancellationToken>());
+
+        // Continue the task and ensure that after is called.
+        tcs.SetResult(null);
+
+        // Ensure that the after handler is called.
+        Assert.Equal(tcsAfter.Task, await Task.WhenAny(tcsAfter.Task, Task.Delay(1000)));
+        _ = after.Received(1).Handle(Arg.Any<IServiceProvider>(), Arg.Any<Notification>(), Arg.Any<CancellationToken>());
+    }
+
     public interface ITestNotificationHandler
     {
         int Count { get; }

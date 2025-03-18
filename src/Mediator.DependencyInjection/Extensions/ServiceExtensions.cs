@@ -11,6 +11,8 @@ public static partial class ServiceExtensions
     {
         var builder = new MediatorBuilder(services);
 
+        services.TryAddTransient<IBackgroundPublisher, DefaultBackgroundPublisher>();
+
         services.TryAddTransient<IMediator, ServiceProviderMediator>();
         services.TryAddTransient<ISender, ServiceProviderMediator>();
         services.TryAddTransient<IPublisher, ServiceProviderMediator>();

@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        tfm: [ 'netcoreapp3.1', 'net6.0' ]
+        tfm: [ 'net8.0', 'net9.0' ]
 
     steps:
       - uses: actions/checkout@v2
@@ -16,9 +16,8 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: | 
-            6.0.x
-            7.0.x
             8.0.x
+            9.0.x
       - name: Install dependencies
         run: dotnet restore
       - name: Build

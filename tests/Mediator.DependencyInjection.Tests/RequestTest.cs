@@ -107,7 +107,7 @@ public class RequestTest
         var mediator = serviceProvider.GetRequiredService<IMediator>();
         var result = await mediator.Send<ListRequest, IReadOnlyList<int>>(new ListRequest());
 
-        Assert.Equal(0, result.Count);
+        Assert.Empty(result);
     }
 
     [Fact]

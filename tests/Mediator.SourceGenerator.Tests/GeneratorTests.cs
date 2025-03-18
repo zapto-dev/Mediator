@@ -6,7 +6,6 @@ using Xunit;
 
 namespace Mediator.SourceGenerator.Tests;
 
-[UsesVerify]
 public class GeneratorTests
 {
     [Fact]

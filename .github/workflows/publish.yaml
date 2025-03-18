@@ -15,9 +15,8 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: | 
-            6.0.x
-            7.0.x
             8.0.x
+            9.0.x
       - name: Install dependencies
         run: dotnet restore
       - name: Build
@@ -25,7 +24,7 @@ jobs:
       - name: Test Mediator.SourceGenerator
         run: dotnet test --no-restore --verbosity normal tests/Mediator.SourceGenerator.Tests/Mediator.SourceGenerator.Tests.csproj
       - name: Publish
-        uses: GerardSmit/publish-nuget@v3.1.2
+        uses: GerardSmit/publish-nuget@v4.0.2
         with:
           NUGET_KEY: ${{secrets.NUGET_API_KEY}}
           VERSION_FILE_PATH: src/Directory.Build.props
