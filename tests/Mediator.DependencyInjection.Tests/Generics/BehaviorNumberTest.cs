@@ -10,9 +10,14 @@ using Zapto.Mediator;
 
 namespace Mediator.DependencyInjection.Tests.Generics;
 
-public record struct ReturnNumberRequest<TSelf>(TSelf Value) : IRequest<TSelf>
+public record struct ReturnNumberRequest<TSelf>(TSelf Value) : IRequest<TSelf>, IAddOneInterface
 	where TSelf : INumber<TSelf>;
 
+public interface IAddOneInterface;
+
+/// <summary>
+/// Returns the value of the request.
+/// </summary>
 public class ReturnNumberRequestHandler<TSelf> : IRequestHandler<ReturnNumberRequest<TSelf>, TSelf>
 	where TSelf : INumber<TSelf>
 {
@@ -23,10 +28,45 @@ public class ReturnNumberRequestHandler<TSelf> : IRequestHandler<ReturnNumberReq
 	}
 }
 
-public class AddOnePipelineBehavior<TSelf> : IPipelineBehavior<ReturnNumberRequest<TSelf>, TSelf>
+/// <summary>
+/// Always adds one to the specific request.
+/// </summary>
+public class AddOneWithRequestPipelineBehavior<TSelf> : IPipelineBehavior<ReturnNumberRequest<TSelf>, TSelf>
 	where TSelf : INumber<TSelf>, IAdditionOperators<TSelf, TSelf, TSelf>
 {
 	public async ValueTask<TSelf> Handle(IServiceProvider provider, ReturnNumberRequest<TSelf> request, RequestHandlerDelegate<TSelf> next,
+		CancellationToken cancellationToken)
+	{
+		var result = await next();
+
+		return result + TSelf.One;
+	}
+}
+
+/// <summary>
+/// Always adds one to the result if the response implements <see cref="INumber{T}"/>.
+/// </summary>
+public class AddOneWithResponsePipelineBehavior<TRequest, TSelf>  : IPipelineBehavior<TRequest, TSelf>
+	where TRequest : IRequest<TSelf>
+	where TSelf : INumber<TSelf>, IAdditionOperators<TSelf, TSelf, TSelf>
+{
+	public async ValueTask<TSelf> Handle(IServiceProvider provider, TRequest request, RequestHandlerDelegate<TSelf> next,
+		CancellationToken cancellationToken)
+	{
+		var result = await next();
+
+		return result + TSelf.One;
+	}
+}
+
+/// <summary>
+/// Add one from the result when the request implements <see cref="IAddOneInterface"/>.
+/// </summary>
+public class AddOneWithRequestInterfacePipelineBehavior<TRequest, TSelf> : IPipelineBehavior<TRequest, TSelf>
+	where TRequest : IRequest<TSelf>, IAddOneInterface
+	where TSelf : INumber<TSelf>
+{
+	public async ValueTask<TSelf> Handle(IServiceProvider provider, TRequest request, RequestHandlerDelegate<TSelf> next,
 		CancellationToken cancellationToken)
 	{
 		var result = await next();
@@ -53,14 +93,17 @@ public class BehaviorNumberTest
 		Assert.Equal(10L, await mediator.Send(new ReturnNumberRequest<long>(10L)));
 	}
 
-	[Fact]
-	public async Task AddOneBehavior()
+	[Theory]
+	[InlineData(typeof(AddOneWithRequestPipelineBehavior<>))]
+	[InlineData(typeof(AddOneWithResponsePipelineBehavior<,>))]
+	[InlineData(typeof(AddOneWithRequestInterfacePipelineBehavior<,>))]
+	public async Task AddOneBehaviorResponse(Type pipeline)
 	{
 		await using var provider = new ServiceCollection()
 			.AddMediator(b =>
 			{
 				b.AddRequestHandler(typeof(ReturnNumberRequestHandler<>));
-				b.AddPipelineBehavior(typeof(AddOnePipelineBehavior<>));
+				b.AddPipelineBehavior(pipeline);
 			})
 			.BuildServiceProvider();
 
