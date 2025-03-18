@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,7 +52,7 @@ public partial class MediatorBuilder
         return this;
     }
 
-    public IMediatorBuilder AddStreamRequestHandler<TRequest, TResponse>(Func<IServiceProvider, TRequest, IAsyncEnumerable<TResponse>> handler)
+    public IMediatorBuilder AddStreamRequestHandler<TRequest, TResponse>(Func<IServiceProvider, TRequest, CancellationToken, IAsyncEnumerable<TResponse>> handler)
         where TRequest : IStreamRequest<TResponse>
     {
         if (_ns == null)

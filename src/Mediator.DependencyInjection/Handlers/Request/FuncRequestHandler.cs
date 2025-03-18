@@ -9,15 +9,15 @@ namespace Zapto.Mediator;
 internal class FuncRequestHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
-    private readonly Func<IServiceProvider, TRequest, ValueTask<TResponse>> _invoke;
+    private readonly Func<IServiceProvider, TRequest, CancellationToken, ValueTask<TResponse>> _invoke;
 
-    public FuncRequestHandler(Func<IServiceProvider, TRequest, ValueTask<TResponse>> invoke)
+    public FuncRequestHandler(Func<IServiceProvider, TRequest, CancellationToken, ValueTask<TResponse>> invoke)
     {
         _invoke = invoke;
     }
 
     public ValueTask<TResponse> Handle(IServiceProvider provider, TRequest request, CancellationToken cancellationToken)
     {
-        return _invoke(provider, request);
+        return _invoke(provider, request, cancellationToken);
     }
 }

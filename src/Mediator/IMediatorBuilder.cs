@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 
@@ -76,7 +77,7 @@ public interface IMediatorBuilder
     IMediatorBuilder AddRequestHandler<TRequest, TResponse>(IRequestHandler<TRequest, TResponse> handler)
         where TRequest : IRequest<TResponse>;
 
-    IMediatorBuilder AddRequestHandler<TRequest, TResponse>(Func<IServiceProvider, TRequest, ValueTask<TResponse>> handler)
+    IMediatorBuilder AddRequestHandler<TRequest, TResponse>(Func<IServiceProvider, TRequest, CancellationToken, ValueTask<TResponse>> handler)
         where TRequest : IRequest<TResponse>;
 
     IMediatorBuilder AddRequestHandler(Delegate handler);
@@ -95,7 +96,7 @@ public interface IMediatorBuilder
     IMediatorBuilder AddNotificationHandler<TNotification>(INotificationHandler<TNotification> handler)
         where TNotification : INotification;
 
-    IMediatorBuilder AddNotificationHandler<TNotification>(Func<IServiceProvider, TNotification, ValueTask> handler)
+    IMediatorBuilder AddNotificationHandler<TNotification>(Func<IServiceProvider, TNotification, CancellationToken, ValueTask> handler)
         where TNotification : INotification;
 
     IMediatorBuilder AddNotificationHandler(Delegate handler);
@@ -118,7 +119,7 @@ public interface IMediatorBuilder
     IMediatorBuilder AddStreamRequestHandler<TRequest, TResponse>(IStreamRequestHandler<TRequest, TResponse> handler)
         where TRequest : IStreamRequest<TResponse>;
 
-    public IMediatorBuilder AddStreamRequestHandler<TRequest, TResponse>(Func<IServiceProvider, TRequest, IAsyncEnumerable<TResponse>> handler)
+    public IMediatorBuilder AddStreamRequestHandler<TRequest, TResponse>(Func<IServiceProvider, TRequest, CancellationToken, IAsyncEnumerable<TResponse>> handler)
         where TRequest : IStreamRequest<TResponse>;
 
     IMediatorBuilder AddDefaultRequestHandler(IDefaultRequestHandler handler);

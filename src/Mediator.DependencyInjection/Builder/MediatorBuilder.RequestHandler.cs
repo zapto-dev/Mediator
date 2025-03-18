@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,7 +50,7 @@ public partial class MediatorBuilder
         return this;
     }
 
-    public IMediatorBuilder AddRequestHandler<TRequest, TResponse>(Func<IServiceProvider, TRequest, ValueTask<TResponse>> handler)
+    public IMediatorBuilder AddRequestHandler<TRequest, TResponse>(Func<IServiceProvider, TRequest, CancellationToken, ValueTask<TResponse>> handler)
         where TRequest : IRequest<TResponse>
     {
         if (_ns == null)

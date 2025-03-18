@@ -1,14 +1,22 @@
 <Project>
 
     <PropertyGroup>
-        <Version>1.0.0-alpha.11</Version>
-        <PackageVersion>1.0.0-alpha.11</PackageVersion>
+        <Version>1.0.0-alpha.12</Version>
+        <PackageVersion>1.0.0-alpha.12</PackageVersion>
         <Authors>Zapto</Authors>
         <RepositoryUrl>https://github.com/zapto-dev/Mediator</RepositoryUrl>
         <Copyright>Copyright © 2025 Zapto</Copyright>
         <PackageTags>zapto, mediator</PackageTags>
         <PackageProjectUrl>https://github.com/zapto-dev/Mediator</PackageProjectUrl>
         <PackageLicenseUrl>https://github.com/zapto-dev/Mediator/blob/main/LICENSE</PackageLicenseUrl>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <ExtensionVersion>8.0.0</ExtensionVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetFramework)' == 'net9.0'">
+        <ExtensionVersion>9.0.0</ExtensionVersion>
     </PropertyGroup>
 
 </Project>

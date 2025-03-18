@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,7 +46,7 @@ public partial class MediatorBuilder
         return this;
     }
 
-    public IMediatorBuilder AddNotificationHandler<TNotification>(Func<IServiceProvider, TNotification, ValueTask> handler)
+    public IMediatorBuilder AddNotificationHandler<TNotification>(Func<IServiceProvider, TNotification, CancellationToken, ValueTask> handler)
         where TNotification : INotification
     {
         if (_ns == null)

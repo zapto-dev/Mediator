@@ -23,8 +23,8 @@ internal class DefaultBackgroundPublisher : IBackgroundPublisher
             using var scope = _scopeFactory.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IPublisher>();
 
-            await mediator.Publish(notification, cancellationToken);
-        }, cancellationToken);
+            await mediator.Publish(notification, CancellationToken.None);
+        }, CancellationToken.None);
 
         return default;
     }
@@ -37,8 +37,8 @@ internal class DefaultBackgroundPublisher : IBackgroundPublisher
             using var scope = _scopeFactory.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IPublisher>();
 
-            await mediator.Publish(ns, notification, cancellationToken);
-        }, cancellationToken);
+            await mediator.Publish(ns, notification, CancellationToken.None);
+        }, CancellationToken.None);
 
         return default;
     }
@@ -51,8 +51,8 @@ internal class DefaultBackgroundPublisher : IBackgroundPublisher
             using var scope = _scopeFactory.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IPublisher>();
 
-            await mediator.Publish(notification, cancellationToken);
-        }, cancellationToken);
+            await mediator.Publish(notification, CancellationToken.None);
+        }, CancellationToken.None);
 
         return default;
     }
@@ -66,8 +66,8 @@ internal class DefaultBackgroundPublisher : IBackgroundPublisher
             using var scope = _scopeFactory.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IPublisher>();
 
-            await mediator.Publish(ns, notification, cancellationToken);
-        }, cancellationToken);
+            await mediator.Publish(ns, notification, CancellationToken.None);
+        }, CancellationToken.None);
 
         return default;
     }

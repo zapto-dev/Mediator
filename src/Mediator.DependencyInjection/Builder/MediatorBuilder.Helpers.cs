@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -52,6 +53,7 @@ public partial class MediatorBuilder
         var type = parameter.ParameterType;
         var serviceProvider = Expression.Parameter(typeof(IServiceProvider));
         var notification = Expression.Parameter(type);
+        var cancellationToken = Expression.Parameter(typeof(CancellationToken));
         var getService = typeof(ServiceProviderServiceExtensions).GetMethods()
             .First(i => i.Name == "GetRequiredService" && i.IsGenericMethod);
 
@@ -60,6 +62,7 @@ public partial class MediatorBuilder
             {
                 if (i.ParameterType == type) return notification;
                 if (i.ParameterType == typeof(IServiceProvider)) return serviceProvider;
+                if (i.ParameterType == typeof(CancellationToken)) return cancellationToken;
                 return Expression.Call(getService.MakeGenericMethod(i.ParameterType), serviceProvider);
             })
             .ToArray();
@@ -161,12 +164,12 @@ public partial class MediatorBuilder
             }
         }
 
-        var lambda = Expression.Lambda(result, serviceProvider, notification).Compile();
+        var lambda = Expression.Lambda(result, serviceProvider, notification, cancellationToken).Compile();
         var registerMethod = typeof(MediatorBuilder).GetMethods()
             .First(i =>
                 i.Name == registerMethodName && i.IsGenericMethod &&
                 i.GetParameters().FirstOrDefault() is {ParameterType: {IsGenericType: true} p} &&
-                p.GetGenericTypeDefinition() == typeof(Func<,,>));
+                p.GetGenericTypeDefinition() == typeof(Func<,,,>));
 
         registerMethod
             .MakeGenericMethod(resultType is null

@@ -15,6 +15,8 @@ public partial class MediatorBuilder : IMediatorBuilder
         _ns = ns;
     }
 
+    public IServiceCollection Services => _services;
+
     public IMediatorBuilder WithNamespace(string ns)
     {
         return new MediatorBuilder(_services, new MediatorNamespace(ns));

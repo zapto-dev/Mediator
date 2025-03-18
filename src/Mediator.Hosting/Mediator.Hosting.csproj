@@ -1,23 +1,23 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;netstandard2.1;net8.0;net9.0</TargetFrameworks>
-        <AssemblyName>Zapto.Mediator.DependencyInjection</AssemblyName>
+        <AssemblyName>Zapto.Mediator.Hosting</AssemblyName>
         <RootNamespace>Zapto.Mediator</RootNamespace>
         <LangVersion>10</LangVersion>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <PropertyGroup>
-        <Title>Zapto.Mediator.DependencyInjection</Title>
+        <Title>Zapto.Mediator.Hosting</Title>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(ExtensionVersion)" />
+      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="$(ExtensionVersion)" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Mediator\Mediator.csproj" />
+      <ProjectReference Include="..\Mediator.DependencyInjection\Mediator.DependencyInjection.csproj" />
     </ItemGroup>
 
 </Project>

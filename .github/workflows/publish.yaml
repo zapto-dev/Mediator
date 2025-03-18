@@ -31,4 +31,5 @@ jobs:
           PROJECT_FILE_PATH: |
             src/Mediator/Mediator.csproj
             src/Mediator.DependencyInjection/Mediator.DependencyInjection.csproj
+            src/Mediator.Hosting/Mediator.Hosting.csproj
             src/Mediator.SourceGenerator/Mediator.SourceGenerator.csproj
