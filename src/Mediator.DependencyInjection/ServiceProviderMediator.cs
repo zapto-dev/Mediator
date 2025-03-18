@@ -151,6 +151,7 @@ public class ServiceProviderMediator : PublisherBase, IMediator
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ValueTask SendWithPipelineArray<TRequest>(
         TRequest request,
         IPipelineBehavior<TRequest, Unit>[] array,
@@ -165,6 +166,18 @@ public class ServiceProviderMediator : PublisherBase, IMediator
             return handler.Handle(_provider, request, cancellationToken);
         }
 
+        return SendWithPipelineArraySlow(request, array, handler, cancellationToken, generic);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private ValueTask SendWithPipelineArraySlow<TRequest>(
+        TRequest request,
+        IPipelineBehavior<TRequest, Unit>[] array,
+        IRequestHandler<TRequest> handler,
+        CancellationToken cancellationToken,
+        GenericPipelineBehavior<TRequest, Unit> generic
+    ) where TRequest : IRequest
+    {
         RequestHandlerDelegate<Unit> next = () => Wrap(handler.Handle(_provider, request, cancellationToken));
 
         for (var i = array.Length - 1; i >= 0; i--)
@@ -218,6 +231,7 @@ public class ServiceProviderMediator : PublisherBase, IMediator
             : await SendWithPipelineEnumerable(request, handler, pipeline, cancellationToken);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ValueTask<TResponse> SendWithPipelineArray<TRequest, TResponse>(
         TRequest request,
         IPipelineBehavior<TRequest, TResponse>[] array,
@@ -232,6 +246,18 @@ public class ServiceProviderMediator : PublisherBase, IMediator
             return handler.Handle(_provider, request, cancellationToken);
         }
 
+        return SendWithPipelineArraySlow(request, array, handler, cancellationToken, generic);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private ValueTask<TResponse> SendWithPipelineArraySlow<TRequest, TResponse>(
+        TRequest request,
+        IPipelineBehavior<TRequest, TResponse>[] array,
+        IRequestHandler<TRequest, TResponse> handler,
+        CancellationToken cancellationToken,
+        GenericPipelineBehavior<TRequest, TResponse> generic
+    ) where TRequest : IRequest<TResponse>
+    {
         RequestHandlerDelegate<TResponse> next = () => handler.Handle(_provider, request, cancellationToken);
 
         for (var i = array.Length - 1; i >= 0; i--)
