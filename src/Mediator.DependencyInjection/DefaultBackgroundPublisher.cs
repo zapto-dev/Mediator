@@ -16,7 +16,7 @@ internal class DefaultBackgroundPublisher : IBackgroundPublisher
     }
 
     /// <inheritdoc />
-    public ValueTask Publish(object notification, CancellationToken cancellationToken = default)
+    public void Publish(object notification)
     {
         _ = Task.Run(async () =>
         {
@@ -25,12 +25,10 @@ internal class DefaultBackgroundPublisher : IBackgroundPublisher
 
             await mediator.Publish(notification, CancellationToken.None);
         }, CancellationToken.None);
-
-        return default;
     }
 
     /// <inheritdoc />
-    public ValueTask Publish(MediatorNamespace ns, object notification, CancellationToken cancellationToken = default)
+    public void Publish(MediatorNamespace ns, object notification)
     {
         _ = Task.Run(async () =>
         {
@@ -39,12 +37,10 @@ internal class DefaultBackgroundPublisher : IBackgroundPublisher
 
             await mediator.Publish(ns, notification, CancellationToken.None);
         }, CancellationToken.None);
-
-        return default;
     }
 
     /// <inheritdoc />
-    public ValueTask Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default) where TNotification : INotification
+    public void Publish<TNotification>(TNotification notification) where TNotification : INotification
     {
         _ = Task.Run(async () =>
         {
@@ -53,13 +49,11 @@ internal class DefaultBackgroundPublisher : IBackgroundPublisher
 
             await mediator.Publish(notification, CancellationToken.None);
         }, CancellationToken.None);
-
-        return default;
     }
 
     /// <inheritdoc />
-    public ValueTask Publish<TNotification>(MediatorNamespace ns, TNotification notification,
-        CancellationToken cancellationToken = default) where TNotification : INotification
+    public void Publish<TNotification>(MediatorNamespace ns, TNotification notification)
+        where TNotification : INotification
     {
         _ = Task.Run(async () =>
         {
@@ -68,7 +62,5 @@ internal class DefaultBackgroundPublisher : IBackgroundPublisher
 
             await mediator.Publish(ns, notification, CancellationToken.None);
         }, CancellationToken.None);
-
-        return default;
     }
 }

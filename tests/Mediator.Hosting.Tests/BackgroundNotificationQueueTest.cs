@@ -40,7 +40,7 @@ public class BackgroundNotificationQueueTest
         var backgroundQueue = app.Services.GetRequiredService<BackgroundQueueService>();
         var mediator = app.Services.GetRequiredService<IBackgroundPublisher>();
 
-        await mediator.Publish(new Notification());
+        mediator.Publish(new Notification());
 
         await backgroundQueue.WaitForBackgroundTasksAsync(cts.Token);
 
@@ -80,8 +80,8 @@ public class BackgroundNotificationQueueTest
 
         var notification1 = new Notification();
         var notification2 = new Notification();
-        await mediator.Publish(notification1);
-        await mediator.Publish(notification2);
+        mediator.Publish(notification1);
+        mediator.Publish(notification2);
 
         // Handler should not be called yet
         _ = handler.Received(0).Handle(Arg.Any<IServiceProvider>(), Arg.Any<Notification>(), Arg.Any<CancellationToken>());
@@ -131,8 +131,8 @@ public class BackgroundNotificationQueueTest
 
         var notification1 = new Notification();
         var notification2 = new Notification();
-        await mediator.Publish(notification1);
-        await mediator.Publish(notification2);
+        mediator.Publish(notification1);
+        mediator.Publish(notification2);
 
         // Handler should not be called yet
         _ = handler.Received(0).Handle(Arg.Any<IServiceProvider>(), Arg.Any<Notification>(), Arg.Any<CancellationToken>());
@@ -176,7 +176,7 @@ public class BackgroundNotificationQueueTest
 
         await app.StopAsync();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(async () => await mediator.Publish(new Notification()));
+        Assert.Throws<OperationCanceledException>(() => mediator.Publish(new Notification()));
     }
 
     [Fact]
@@ -207,7 +207,7 @@ public class BackgroundNotificationQueueTest
 
         var mediator = app.Services.GetRequiredService<IBackgroundPublisher>();
 
-        await mediator.Publish(new Notification());
+        mediator.Publish(new Notification());
 
         var stopTask = app.StopAsync(cts.Token);
 
@@ -244,12 +244,12 @@ public class BackgroundNotificationQueueTest
 
         var mediator = app.Services.GetRequiredService<IBackgroundPublisher>();
 
-        await mediator.Publish(new Notification());
+        mediator.Publish(new Notification());
         Assert.False(cancelled.Value);
 
         await app.StopAsync();
 
-        await mediator.Publish(new Notification());
+        mediator.Publish(new Notification());
         Assert.True(cancelled.Value);
     }
 }

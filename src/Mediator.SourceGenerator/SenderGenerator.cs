@@ -16,10 +16,11 @@ public class SenderGenerator : IIncrementalGenerator
     private bool _generateAssemblyInfo;
 
     private static readonly string[] Interfaces =
-    {
+    [
         "Zapto.Mediator.ISender",
-        "Zapto.Mediator.IPublisherBase"
-    };
+        "Zapto.Mediator.IPublisher",
+        "Zapto.Mediator.IBackgroundPublisher"
+    ];
 
     public SenderGenerator()
         : this(generateAssemblyInfo: true)
@@ -401,7 +402,11 @@ public class SenderGenerator : IIncrementalGenerator
                         });
                     sb.Append(' ');
                     sb.Append(name);
-                    sb.Append("Async");
+                    if (method.ReturnType.SpecialType != SpecialType.System_Void)
+                    {
+                        sb.Append("Async");
+                    }
+
                     AppendGenerics();
                     sb.Append("(this ");
                     sb.AppendType(sender, false);
@@ -470,7 +475,11 @@ public class SenderGenerator : IIncrementalGenerator
 
                     sb.Append(' ');
                     sb.Append(name);
-                    sb.Append("Async");
+                    if (method.ReturnType.SpecialType != SpecialType.System_Void)
+                    {
+                        sb.Append("Async");
+                    }
+
                     AppendGenerics();
                     sb.Append("(this ");
                     sb.AppendType(sender, false);

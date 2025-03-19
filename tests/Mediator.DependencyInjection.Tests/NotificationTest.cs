@@ -156,13 +156,7 @@ public class NotificationTest
             .BuildServiceProvider();
 
         var publisher = serviceProvider.GetRequiredService<IPublisher>();
-        var timeOutTask = Task.Delay(3000);
-        var resultTask = await Task.WhenAny(
-            publisher.Background.Publish(new Notification()).AsTask(),
-            timeOutTask);
-
-        // Ensure that the task completes in the background.
-        Assert.NotEqual(timeOutTask, resultTask);
+        publisher.Background.Publish(new Notification());
 
         // Ensure that the before handler is called.
         Assert.Equal(tcsBefore.Task, await Task.WhenAny(tcsBefore.Task, Task.Delay(1000)));

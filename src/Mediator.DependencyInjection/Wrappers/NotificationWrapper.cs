@@ -8,9 +8,9 @@ namespace Zapto.Mediator.Wrappers;
 
 internal interface INotificationWrapper
 {
-    ValueTask Handle(object notification, CancellationToken cancellationToken, IPublisherBase mediator);
+    ValueTask Handle(object notification, CancellationToken cancellationToken, IPublisher mediator);
 
-    ValueTask Handle(MediatorNamespace ns, object notification, CancellationToken cancellationToken, IPublisherBase mediator);
+    ValueTask Handle(MediatorNamespace ns, object notification, CancellationToken cancellationToken, IPublisher mediator);
 }
 
 internal static class NotificationWrapper
@@ -26,12 +26,12 @@ internal static class NotificationWrapper
 internal sealed class NotificationWrapper<TNotification> : INotificationWrapper
     where TNotification : INotification
 {
-    public ValueTask Handle(object notification, CancellationToken cancellationToken, IPublisherBase mediator)
+    public ValueTask Handle(object notification, CancellationToken cancellationToken, IPublisher mediator)
     {
         return mediator.Publish((TNotification)notification, cancellationToken);
     }
 
-    public ValueTask Handle(MediatorNamespace ns, object notification, CancellationToken cancellationToken, IPublisherBase mediator)
+    public ValueTask Handle(MediatorNamespace ns, object notification, CancellationToken cancellationToken, IPublisher mediator)
     {
         return mediator.Publish(ns, (TNotification)notification, cancellationToken);
     }

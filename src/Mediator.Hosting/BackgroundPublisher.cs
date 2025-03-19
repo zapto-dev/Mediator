@@ -32,7 +32,7 @@ internal class BackgroundPublisher : IBackgroundPublisher
         ? _applicationLifetime.ApplicationStopping
         : CancellationToken.None;
 
-    public ValueTask Publish(object notification, CancellationToken cancellationToken = default)
+    public void Publish(object notification)
     {
         _backgroundQueueService.QueueBackgroundWorkItem(async () =>
         {
@@ -41,11 +41,9 @@ internal class BackgroundPublisher : IBackgroundPublisher
 
             await mediator.Publish(notification, CancellationToken);
         }, notification);
-
-        return default;
     }
 
-    public ValueTask Publish(MediatorNamespace ns, object notification, CancellationToken cancellationToken = default)
+    public void Publish(MediatorNamespace ns, object notification)
     {
         _backgroundQueueService.QueueBackgroundWorkItem(async () =>
         {
@@ -54,11 +52,9 @@ internal class BackgroundPublisher : IBackgroundPublisher
 
             await mediator.Publish(ns, notification, CancellationToken);
         }, notification);
-
-        return default;
     }
 
-    public ValueTask Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default) where TNotification : INotification
+    public void Publish<TNotification>(TNotification notification) where TNotification : INotification
     {
         _backgroundQueueService.QueueBackgroundWorkItem(async () =>
         {
@@ -67,11 +63,10 @@ internal class BackgroundPublisher : IBackgroundPublisher
 
             await mediator.Publish(notification, CancellationToken);
         }, notification);
-
-        return default;
     }
 
-    public ValueTask Publish<TNotification>(MediatorNamespace ns, TNotification notification, CancellationToken cancellationToken = default) where TNotification : INotification
+    public void Publish<TNotification>(MediatorNamespace ns, TNotification notification)
+        where TNotification : INotification
     {
         _backgroundQueueService.QueueBackgroundWorkItem(async () =>
         {
@@ -80,7 +75,5 @@ internal class BackgroundPublisher : IBackgroundPublisher
 
             await mediator.Publish(ns, notification, CancellationToken);
         }, notification);
-
-        return default;
     }
 }
