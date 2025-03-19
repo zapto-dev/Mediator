@@ -164,6 +164,11 @@ public static class StringBuilderExtensions
                 sb.Append(", ");
             }
         }
+
+        if (sb.Length > 2 && sb[sb.Length - 2] == ',' && sb[sb.Length - 1] == ' ')
+        {
+            sb.Length -= 2;
+        }
     }
 
 

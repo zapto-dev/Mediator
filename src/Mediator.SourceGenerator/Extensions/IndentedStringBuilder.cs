@@ -36,7 +36,11 @@ internal class IndentedStringBuilder
 
     private StringBuilder Builder { get; }
 
-    public int Length => Builder.Length;
+    public int Length
+    {
+        get => Builder.Length;
+        set => Builder.Length = value;
+    }
 
     public char this[int index]
     {
@@ -174,5 +178,10 @@ internal class IndentedStringBuilder
             builder.Dedent();
             builder.AppendLine(close);
         }
+    }
+
+    public void Insert(int index, string s)
+    {
+        Builder.Insert(index, s);
     }
 }

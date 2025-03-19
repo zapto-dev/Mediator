@@ -42,6 +42,17 @@ public record Notification(string Argument, int OptionalArgument = 0) : INotific
     }
 
     [Fact]
+    public Task GenerateNotificationNoArguments()
+    {
+        const string source = @"
+using MediatR;
+
+public record Notification : INotification;";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
+
+    [Fact]
     public Task GenerateStructNotification()
     {
         const string source = @"
