@@ -15,7 +15,7 @@ namespace Zapto.Mediator.Generator;
 /// An immutable, equatable array. This is equivalent to <see cref="ImmutableArray"/> but with value equality support.
 /// </summary>
 /// <typeparam name="T">The type of values in the array.</typeparam>
-internal readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnumerable<T>
+internal readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IReadOnlyList<T>
     where T : IEquatable<T>
 {
     public static readonly EquatableArray<T> Empty = new(ImmutableArray<T>.Empty);
@@ -212,6 +212,14 @@ internal readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnu
     IEnumerator IEnumerable.GetEnumerator()
     {
         return ((IEnumerable)AsImmutableArray()).GetEnumerator();
+    }
+
+    int IReadOnlyCollection<T>.Count => Length;
+
+    T IReadOnlyList<T>.this[int index]
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => AsImmutableArray()[index];
     }
 }
 

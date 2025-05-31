@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -320,6 +321,8 @@ public class SenderGenerator : IIncrementalGenerator
 
         sb.Indent();
 
+        var parameters = new List<SimpleParameter>();
+
         foreach (var (request, handlerType) in result.Requests)
         {
             void AddXmlDoc()
@@ -484,11 +487,14 @@ public class SenderGenerator : IIncrementalGenerator
                     sb.Append("(this ");
                     sb.AppendType(sender, false);
                     sb.Append(" sender, ");
+
+                    var hasRequiredProperties = FillParameters(result, constructor, parameters);
+
                     sb.AppendParameterDefinitions(method.Parameters, t =>
                     {
                         if (t.Type.Name == parameterName)
                         {
-                            sb.AppendParameterDefinitions(constructor.Parameters);
+                            sb.AppendParameterDefinitions(parameters);
                             return AppendResult.TypeAndName;
                         }
 
@@ -500,6 +506,7 @@ public class SenderGenerator : IIncrementalGenerator
 
                         return AppendResult.None;
                     });
+
                     sb.AppendLine(")");
 
                     sb.Indent();
@@ -522,7 +529,50 @@ public class SenderGenerator : IIncrementalGenerator
                         sb.AppendType(result.Type, false);
                         sb.Append('(');
                         sb.AppendParameters(constructor.Parameters);
-                        sb.Append(')');
+
+                        if (!hasRequiredProperties)
+                        {
+                            sb.Append(')');
+                        }
+                        else
+                        {
+                            // If there are required properties, we need to initialize them
+                            if (constructor.Parameters.Length > 0)
+                            {
+                                sb.Append(", ");
+                            }
+
+                            sb.AppendParameters(result.Type.RequiredProperties, t =>
+                            {
+                                foreach (var parameter in constructor.Parameters)
+                                {
+                                    if (string.Equals(parameter.Name, t.Name, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        return false;
+                                    }
+                                }
+
+                                return true;
+                            });
+
+                            sb.Append(") { ");
+
+                            for (var j = 0; j < result.Type.RequiredProperties.Length; j++)
+                            {
+                                var property = result.Type.RequiredProperties[j];
+                                sb.Append(property.Name);
+                                sb.Append(" = ");
+                                sb.Append(property.Name);
+
+                                if (j != result.Type.RequiredProperties.Length - 1)
+                                {
+                                    sb.Append(", ");
+                                }
+                            }
+
+                            sb.Append(" }");
+                        }
+
                         return true;
                     });
                     sb.AppendLine(");");
@@ -540,5 +590,50 @@ public class SenderGenerator : IIncrementalGenerator
         }
 
         context.AddSource($"{result.Type.UniqueId}_Extensions.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
+    }
+
+    private static bool FillParameters(SourceWithHandlerResult result, SimpleConstructor constructor, List<SimpleParameter> parameters)
+    {
+        var hasRequiredProperties = false;
+
+        parameters.Clear();
+
+        foreach (var parameter in constructor.Parameters)
+        {
+            if (!parameter.HasExplicitDefaultValue)
+            {
+                parameters.Add(parameter);
+            }
+        }
+
+        foreach (var property in result.Type.RequiredProperties)
+        {
+            var hasConstructorParameter = false;
+
+            foreach (var parameter in constructor.Parameters)
+            {
+                if (string.Equals(parameter.Name, property.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    hasConstructorParameter = true;
+                    break;
+                }
+            }
+
+            if (!hasConstructorParameter)
+            {
+                parameters.Add(property);
+                hasRequiredProperties = true;
+            }
+        }
+
+        foreach (var parameter in constructor.Parameters)
+        {
+            if (parameter.HasExplicitDefaultValue)
+            {
+                parameters.Add(parameter);
+            }
+        }
+
+        return hasRequiredProperties;
     }
 }

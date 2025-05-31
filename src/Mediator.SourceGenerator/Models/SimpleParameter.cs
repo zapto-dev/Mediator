@@ -32,4 +32,30 @@ internal record SimpleParameter(
         );
     }
 
+    public static EquatableArray<SimpleParameter> GetRequiredProperties(INamedTypeSymbol type)
+    {
+        var builder = ImmutableArray.CreateBuilder<SimpleParameter>();
+
+        foreach (var symbol in type.GetMembers())
+        {
+            if (symbol is not IPropertySymbol property)
+            {
+                continue;
+            }
+
+            if (!property.IsRequired || property.IsStatic || property.DeclaredAccessibility != Accessibility.Public)
+            {
+                continue;
+            }
+
+            builder.Add(new SimpleParameter(
+                property.Name,
+                SimpleType.FromSymbol(property.Type),
+                false,
+                null
+            ));
+        }
+
+        return new EquatableArray<SimpleParameter>(builder.ToImmutable());
+    }
 }

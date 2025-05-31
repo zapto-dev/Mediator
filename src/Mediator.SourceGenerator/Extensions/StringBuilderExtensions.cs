@@ -128,12 +128,13 @@ public static class StringBuilderExtensions
         }
     }
 
-    internal static void AppendParameterDefinitions(
+    internal static void AppendParameterDefinitions<T>(
         this IndentedStringBuilder sb,
-        EquatableArray<SimpleParameter> symbols,
+        T symbols,
         Func<SimpleParameter, AppendResult>? middleware = null)
+        where T : IReadOnlyList<SimpleParameter>
     {
-        var length = symbols.Length;
+        var length = symbols.Count;
 
         for (var i = 0; i < length; i++)
         {
@@ -170,8 +171,6 @@ public static class StringBuilderExtensions
             sb.Length -= 2;
         }
     }
-
-
 
     internal static void AppendGenericConstraints(this IndentedStringBuilder sb, SimpleType type)
     {

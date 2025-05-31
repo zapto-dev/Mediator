@@ -106,4 +106,49 @@ public record Request<T>(T Argument) : IRequest<T> where T : class;";
 
         return TestHelper.Verify<SenderGenerator>(source);
     }
+
+    [Fact]
+    public Task GenerateClassWithoutRequired()
+    {
+        const string source = @"
+using MediatR;
+
+public class Request : IRequest
+{
+    public string Property { get; set; }
+}
+";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
+
+    [Fact]
+    public Task GenerateClassWithRequired()
+    {
+        const string source = @"
+using MediatR;
+
+public class Request : IRequest
+{
+    public required string RequiredProperty { get; set; }
+}
+";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
+
+    [Fact]
+    public Task GenerateClassWithOptionalConstructorAndRequired()
+    {
+        const string source = @"
+using MediatR;
+
+public class Request(string optionalParameter = ""a"") : IRequest
+{
+    public required string RequiredProperty { get; set; }
+}
+";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
 }

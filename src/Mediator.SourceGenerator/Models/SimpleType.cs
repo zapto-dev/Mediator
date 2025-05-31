@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace Zapto.Mediator.Generator;
@@ -15,7 +16,8 @@ internal record SimpleType(
     string ContainingAssembly,
     EquatableArray<SimpleTypeParameter> TypeParameters,
     EquatableArray<SimpleType> TypeArguments,
-    EquatableArray<SimpleConstructor> Constructors
+    EquatableArray<SimpleConstructor> Constructors,
+    EquatableArray<SimpleParameter> RequiredProperties
 )
 {
     public string UniqueId => Namespace is null ? Name : $"{Namespace.Replace('.', '_')}_{Name}";
@@ -54,7 +56,8 @@ internal record SimpleType(
                 symbol.ContainingAssembly.Name,
                 EquatableArray<SimpleTypeParameter>.Empty,
                 EquatableArray<SimpleType>.Empty,
-                EquatableArray<SimpleConstructor>.Empty
+                EquatableArray<SimpleConstructor>.Empty,
+                EquatableArray<SimpleParameter>.Empty
             );
         }
 
@@ -70,7 +73,8 @@ internal record SimpleType(
             namedTypeSymbol.ContainingAssembly.Name,
             SimpleTypeParameter.FromArray(namedTypeSymbol.TypeParameters),
             FromArray(namedTypeSymbol.TypeArguments),
-            withConstructors? SimpleConstructor.FromArray(namedTypeSymbol.Constructors) : EquatableArray<SimpleConstructor>.Empty
+            withConstructors ? SimpleConstructor.FromArray(namedTypeSymbol.Constructors) : EquatableArray<SimpleConstructor>.Empty,
+            withConstructors ? SimpleParameter.GetRequiredProperties(namedTypeSymbol) : EquatableArray<SimpleParameter>.Empty
         );
     }
 
