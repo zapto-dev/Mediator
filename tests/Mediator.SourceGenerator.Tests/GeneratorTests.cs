@@ -138,6 +138,23 @@ public class Request : IRequest
     }
 
     [Fact]
+    public Task GenerateClassWithMultipleRequired()
+    {
+        const string source = @"
+using MediatR;
+
+public class Request : IRequest
+{
+    public required string RequiredProperty { get; set; }
+
+    public required int AnotherRequiredProperty { get; set; }
+}
+";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
+
+    [Fact]
     public Task GenerateClassWithOptionalConstructorAndRequired()
     {
         const string source = @"

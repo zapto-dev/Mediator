@@ -529,33 +529,11 @@ public class SenderGenerator : IIncrementalGenerator
                         sb.AppendType(result.Type, false);
                         sb.Append('(');
                         sb.AppendParameters(constructor.Parameters);
+                        sb.Append(')');
 
-                        if (!hasRequiredProperties)
+                        if (hasRequiredProperties)
                         {
-                            sb.Append(')');
-                        }
-                        else
-                        {
-                            // If there are required properties, we need to initialize them
-                            if (constructor.Parameters.Length > 0)
-                            {
-                                sb.Append(", ");
-                            }
-
-                            sb.AppendParameters(result.Type.RequiredProperties, t =>
-                            {
-                                foreach (var parameter in constructor.Parameters)
-                                {
-                                    if (string.Equals(parameter.Name, t.Name, StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        return false;
-                                    }
-                                }
-
-                                return true;
-                            });
-
-                            sb.Append(") { ");
+                            sb.Append(" { ");
 
                             for (var j = 0; j < result.Type.RequiredProperties.Length; j++)
                             {
