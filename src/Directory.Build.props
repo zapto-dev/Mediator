@@ -1,7 +1,7 @@
 <Project>
 
     <PropertyGroup>
-        <Version>1.0.0-alpha.16</Version>
+        <Version>1.0.0-alpha.17</Version>
         <PackageVersion>1.0.0-alpha.17</PackageVersion>
         <Authors>Zapto</Authors>
         <RepositoryUrl>https://github.com/zapto-dev/Mediator</RepositoryUrl>
