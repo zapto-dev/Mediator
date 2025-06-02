@@ -17,7 +17,7 @@ public partial class MediatorBuilder
 
     private void RegisterHandler(
         string registerMethodName,
-        Type parameterTypeTarget,
+        Type[] parameterTypeTargets,
         string noResultMessage,
         string multipleResultMessage,
         Delegate handler)
@@ -27,12 +27,13 @@ public partial class MediatorBuilder
             .GetParameters()
             .Select(i =>
             {
-                var type = i.ParameterType.GetInterfaces().FirstOrDefault(t =>
-                    parameterTypeTarget.IsGenericType == t.IsGenericType && (
-                        t.IsGenericType
-                            ? t.GetGenericTypeDefinition() == parameterTypeTarget
-                            : t == parameterTypeTarget
-                    ));
+                var type = i.ParameterType.GetInterfaces().FirstOrDefault(t1 =>
+                    parameterTypeTargets.Any(t2 =>
+                        t2.IsGenericType == t1.IsGenericType && (
+                            t1.IsGenericType
+                                ? t1.GetGenericTypeDefinition() == t2
+                                : t1 == t2
+                        )));
 
                 return (Type: type!, Parameter: i);
             })
@@ -168,6 +169,7 @@ public partial class MediatorBuilder
         var registerMethod = typeof(MediatorBuilder).GetMethods()
             .First(i =>
                 i.Name == registerMethodName && i.IsGenericMethod &&
+                i.GetGenericArguments().Length == (interfaceType.IsGenericType ? 1 + interfaceType.GetGenericArguments().Length : 1) &&
                 i.GetParameters().FirstOrDefault() is {ParameterType: {IsGenericType: true} p} &&
                 p.GetGenericTypeDefinition() == typeof(Func<,,,>));
 

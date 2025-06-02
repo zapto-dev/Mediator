@@ -20,6 +20,9 @@ public static partial class ServiceExtensions
         services.TryAddSingleton(typeof(GenericRequestCache<,>));
         services.TryAddTransient(typeof(IRequestHandler<,>), typeof(GenericRequestHandler<,>));
 
+        services.TryAddSingleton(typeof(GenericRequestCache<>));
+        services.TryAddTransient(typeof(IRequestHandler<>), typeof(GenericRequestHandler<>));
+
         services.TryAddSingleton(typeof(GenericNotificationCache<>));
         services.TryAddTransient(typeof(GenericNotificationHandler<>));
 

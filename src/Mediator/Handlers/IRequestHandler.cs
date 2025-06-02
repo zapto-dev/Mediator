@@ -30,7 +30,7 @@ public interface IRequestHandler<in TRequest, TResponse> : IRequestHandler
 /// You do not need to register this interface explicitly with a container as it inherits from the base <see cref="IRequestHandler{TRequest, TResponse}" /> interface.
 /// </summary>
 /// <typeparam name="TRequest">The type of request being handled</typeparam>
-public interface IRequestHandler<in TRequest>
+public interface IRequestHandler<in TRequest> : IRequestHandler
     where TRequest : IRequest
 {
     /// <summary>

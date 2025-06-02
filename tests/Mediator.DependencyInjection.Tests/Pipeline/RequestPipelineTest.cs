@@ -59,4 +59,31 @@ public class RequestPipelineTest
 			await provider.GetRequiredService<IMediator>().Send<StringRequest, string>(new StringRequest())
 		);
 	}
+
+	[Fact]
+	public async Task UnitPipeline()
+	{
+		var requestHandlerCalled = false;
+		var pipelineBehaviorCalled = false;
+
+		await using var provider = new ServiceCollection()
+			.AddMediator(b =>
+			{
+				b.AddRequestHandler((VoidRequest _) =>
+				{
+					requestHandlerCalled = true;
+				});
+				b.AddPipelineBehavior<VoidRequest>(async (_, _, next, _) =>
+				{
+					pipelineBehaviorCalled = true;
+					return await next();
+				});
+			})
+			.BuildServiceProvider();
+
+		await provider.GetRequiredService<IMediator>().Send(new VoidRequest());
+
+		Assert.True(requestHandlerCalled, "Request handler was not called");
+		Assert.True(pipelineBehaviorCalled, "Pipeline behavior was not called");
+	}
 }

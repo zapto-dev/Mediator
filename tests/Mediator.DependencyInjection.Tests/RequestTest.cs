@@ -21,6 +21,8 @@ public class ListHandler : IRequestHandler<ListRequest, IReadOnlyList<int>>
         => new(Array.Empty<int>());
 }
 
+public record VoidRequest : IRequest;
+
 public class RequestTest
 {
     [Fact]
@@ -134,5 +136,22 @@ public class RequestTest
         var mediator = serviceProvider.GetRequiredService<IMediator>();
 
         await Assert.ThrowsAsync<NamespaceHandlerNotFoundException>(() => mediator.Send<Request, int>(ns, new Request()).AsTask());
+    }
+
+    [Fact]
+    public async Task TestVoidRequest()
+    {
+        var handler = Substitute.For<IRequestHandler<VoidRequest>>();
+
+        var serviceProvider = new ServiceCollection()
+            .AddMediator(b => b.AddRequestHandler(handler))
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        await mediator.Send(new VoidRequest());
+
+        _ = handler.Received()
+            .Handle(Arg.Any<IServiceProvider>(), Arg.Any<VoidRequest>(), Arg.Any<CancellationToken>());
     }
 }

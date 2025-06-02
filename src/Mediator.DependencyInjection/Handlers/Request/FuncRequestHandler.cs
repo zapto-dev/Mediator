@@ -21,3 +21,19 @@ internal class FuncRequestHandler<TRequest, TResponse> : IRequestHandler<TReques
         return _invoke(provider, request, cancellationToken);
     }
 }
+
+internal class FuncRequestHandler<TRequest> : IRequestHandler<TRequest>
+    where TRequest : IRequest
+{
+    private readonly Func<IServiceProvider, TRequest, CancellationToken, ValueTask> _invoke;
+
+    public FuncRequestHandler(Func<IServiceProvider, TRequest, CancellationToken, ValueTask> invoke)
+    {
+        _invoke = invoke;
+    }
+
+    public ValueTask Handle(IServiceProvider provider, TRequest request, CancellationToken cancellationToken)
+    {
+        return _invoke(provider, request, cancellationToken);
+    }
+}

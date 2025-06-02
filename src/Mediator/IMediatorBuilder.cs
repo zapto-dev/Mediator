@@ -46,6 +46,12 @@ public static class MediatorBuilderExtensions
     {
         return builder.AddStreamPipelineBehavior(new DelegateStreamPipelineBehavior<TRequest, TResponse>(middleware));
     }
+
+    public static IMediatorBuilder AddPipelineBehavior<TRequest>(this IMediatorBuilder builder, RequestMiddleware<TRequest, Unit> middleware)
+        where TRequest : notnull
+    {
+        return builder.AddPipelineBehavior(new DelegatePipelineBehavior<TRequest, Unit>(middleware));
+    }
 }
 
 public enum RegistrationScope
@@ -71,11 +77,17 @@ public interface IMediatorBuilder
         where THandler : class, IRequestHandler<TRequest, TResponse>;
 
     IMediatorBuilder AddRequestHandler<TRequest, THandler>(RegistrationScope scope = RegistrationScope.Transient)
-        where TRequest : IRequest<Unit>
-        where THandler : class, IRequestHandler<TRequest, Unit>;
+        where TRequest : IRequest
+        where THandler : class, IRequestHandler<TRequest>;
+
+    IMediatorBuilder AddRequestHandler<TRequest>(IRequestHandler<TRequest> handler)
+        where TRequest : IRequest;
 
     IMediatorBuilder AddRequestHandler<TRequest, TResponse>(IRequestHandler<TRequest, TResponse> handler)
         where TRequest : IRequest<TResponse>;
+
+    IMediatorBuilder AddRequestHandler<TRequest>(Func<IServiceProvider, TRequest, CancellationToken, ValueTask> handler)
+        where TRequest : IRequest;
 
     IMediatorBuilder AddRequestHandler<TRequest, TResponse>(Func<IServiceProvider, TRequest, CancellationToken, ValueTask<TResponse>> handler)
         where TRequest : IRequest<TResponse>;

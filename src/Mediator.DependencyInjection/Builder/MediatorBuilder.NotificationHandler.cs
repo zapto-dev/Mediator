@@ -64,11 +64,16 @@ public partial class MediatorBuilder
         return this;
     }
 
+    private static readonly Type[] NotificationParameterTypeTargets = new[]
+    {
+        typeof(INotification),
+    };
+
     public IMediatorBuilder AddNotificationHandler(Delegate handler)
     {
         RegisterHandler(
             registerMethodName: nameof(AddNotificationHandler),
-            parameterTypeTarget: typeof(INotification),
+            parameterTypeTargets: NotificationParameterTypeTargets,
             noResultMessage: "No notification found in delegate",
             multipleResultMessage: "Multiple notifications found in delegate",
             handler: handler);

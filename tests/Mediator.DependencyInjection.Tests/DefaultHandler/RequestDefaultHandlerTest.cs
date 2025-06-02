@@ -26,4 +26,21 @@ public class RequestDefaultHandlerTest
 		_ = handler.Received()
 			.Handle<Request, int>(Arg.Any<IServiceProvider>(), Arg.Any<Request>(), Arg.Any<CancellationToken>());
 	}
+
+	[Fact]
+	public async Task TestVoidRequest()
+	{
+		var handler = Substitute.For<IDefaultRequestHandler>();
+
+		var serviceProvider = new ServiceCollection()
+			.AddMediator(b => b.AddDefaultRequestHandler(handler))
+			.BuildServiceProvider();
+
+		var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+		await mediator.Send(new VoidRequest());
+
+		_ = handler.Received()
+			.Handle(Arg.Any<IServiceProvider>(), Arg.Any<VoidRequest>(), Arg.Any<CancellationToken>());
+	}
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -25,6 +26,11 @@ internal sealed class GenericRequestRegistration
 }
 
 internal sealed class GenericRequestCache<TRequest, TResponse>
+{
+    public Type? RequestHandlerType { get; set; }
+}
+
+internal sealed class GenericRequestCache<TRequest>
 {
     public Type? RequestHandlerType { get; set; }
 }
@@ -103,10 +109,90 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
 
         var method = _defaultHandler
             .GetType()
-            .GetMethod(nameof(IDefaultRequestHandler.Handle))!
+            .GetMethods()
+            .First(m => m.Name == nameof(IDefaultRequestHandler.Handle) && m.GetGenericArguments().Length == 2)
             .MakeGenericMethod(arguments);
 
         return await (ValueTask<TResponse>) method.Invoke(_defaultHandler, new object[] {_serviceProvider, request, ct})!;
+    }
+}
 
+
+internal sealed class GenericRequestHandler<TRequest> : IRequestHandler<TRequest>
+    where TRequest : IRequest
+{
+    private readonly GenericRequestCache<TRequest> _cache;
+    private readonly IEnumerable<GenericRequestRegistration> _enumerable;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IDefaultRequestHandler? _defaultHandler;
+
+    public GenericRequestHandler(
+        IEnumerable<GenericRequestRegistration> enumerable,
+        IServiceProvider serviceProvider,
+        GenericRequestCache<TRequest> cache,
+        IDefaultRequestHandler? defaultHandler = null)
+    {
+        _enumerable = enumerable;
+        _serviceProvider = serviceProvider;
+        _cache = cache;
+        _defaultHandler = defaultHandler;
+    }
+
+    public async ValueTask Handle(IServiceProvider provider, TRequest request, CancellationToken ct)
+    {
+        if (_cache.RequestHandlerType is {} cachedType)
+        {
+            var handler = _serviceProvider.GetRequiredService(cachedType);
+
+            await ((IRequestHandler<TRequest>)handler).Handle(provider, request, ct);
+            return;
+        }
+
+        var requestType = typeof(TRequest);
+
+        if (!requestType.IsGenericType)
+        {
+            if (_defaultHandler is null)
+            {
+                throw new HandlerNotFoundException($"No handler found for request type {requestType.FullName}.");
+            }
+
+            await _defaultHandler.Handle(_serviceProvider, request, ct);
+            return;
+        }
+
+        var arguments = requestType.GetGenericArguments();
+
+        requestType = requestType.GetGenericTypeDefinition();
+
+        foreach (var registration in _enumerable)
+        {
+            if (registration.RequestType != requestType ||
+                registration.ResponseType != null)
+            {
+                continue;
+            }
+
+            var type = registration.HandlerType.MakeGenericType(arguments);
+            var handler = (IRequestHandler<TRequest>) _serviceProvider.GetRequiredService(type);
+
+            _cache.RequestHandlerType = type;
+
+            await handler.Handle(provider, request, ct);
+            return;
+        }
+
+        if (_defaultHandler is null)
+        {
+            throw new HandlerNotFoundException($"No handler found for request type {requestType.FullName}.");
+        }
+
+        var method = _defaultHandler
+            .GetType()
+            .GetMethods()
+            .First(m => m.Name == nameof(IDefaultRequestHandler.Handle) && m.GetGenericArguments().Length == 1)
+            .MakeGenericMethod(arguments);
+
+         await (ValueTask) method.Invoke(_defaultHandler, new object[] {_serviceProvider, request, ct})!;
     }
 }

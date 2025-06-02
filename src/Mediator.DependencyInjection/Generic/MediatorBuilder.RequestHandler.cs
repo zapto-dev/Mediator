@@ -29,13 +29,17 @@ public partial class MediatorBuilder
     public IMediatorBuilder AddRequestHandler(Type handlerType, RegistrationScope scope = RegistrationScope.Transient)
     {
         var handlers = handlerType.GetInterfaces()
-            .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IRequestHandler<,>))
+            .Where(t => t.IsGenericType && (
+                t.GetGenericTypeDefinition() == typeof(IRequestHandler<,>) ||
+                t.GetGenericTypeDefinition() == typeof(IRequestHandler<>)
+            ))
             .ToArray();
 
         foreach (var type in handlers)
         {
+            var args = type.GetGenericArguments();
             var requestType = type.GetGenericArguments()[0];
-            var responseType = type.GetGenericArguments()[1];
+            var responseType = args.Length > 1 ? args[1] : null;
 
             if (requestType.IsGenericType)
             {

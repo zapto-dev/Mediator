@@ -21,3 +21,22 @@ internal class NamespaceRequestHandler<TRequest, TResponse> : INamespaceRequestH
         return _handler;
     }
 }
+
+internal class NamespaceRequestHandler<TRequest> : INamespaceRequestHandler<TRequest>
+    where TRequest : IRequest
+{
+    private readonly IRequestHandler<TRequest> _handler;
+
+    public NamespaceRequestHandler(MediatorNamespace ns, IRequestHandler<TRequest> handler)
+    {
+        Namespace = ns;
+        _handler = handler;
+    }
+
+    public MediatorNamespace Namespace { get; }
+
+    public IRequestHandler<TRequest> GetHandler(IServiceProvider provider)
+    {
+        return _handler;
+    }
+}
