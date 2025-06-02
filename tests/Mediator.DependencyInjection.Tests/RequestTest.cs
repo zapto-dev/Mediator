@@ -154,4 +154,46 @@ public class RequestTest
         _ = handler.Received()
             .Handle(Arg.Any<IServiceProvider>(), Arg.Any<VoidRequest>(), Arg.Any<CancellationToken>());
     }
+
+    private abstract class BaseRequestHandler<T> : IRequestHandler<T, int>
+        where T : IRequest<int>
+    {
+        public ValueTask<int> Handle(IServiceProvider provider, T request, CancellationToken cancellationToken) => new(1);
+    }
+
+    private class RequestHandler : BaseRequestHandler<Request>;
+
+    [Fact]
+    public async Task TestBaseRequestHandler()
+    {
+        var serviceProvider = new ServiceCollection()
+            .AddMediator(b => b.AddRequestHandler(typeof(RequestHandler)))
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        var result = await mediator.Send(new Request());
+
+        Assert.Equal(1, result);
+    }
+
+    private abstract class BaseVoidRequestHandler<T> : IRequestHandler<T>
+        where T : IRequest
+    {
+        public ValueTask Handle(IServiceProvider provider, T request, CancellationToken cancellationToken) => default;
+    }
+
+    private class BaseVoidRequestHandler : BaseVoidRequestHandler<VoidRequest>;
+
+    [Fact]
+    public async Task TestBaseVoidRequestHandler()
+    {
+        var serviceProvider = new ServiceCollection()
+            .AddMediator(b => b.AddRequestHandler(typeof(BaseVoidRequestHandler)))
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        await mediator.Send(new VoidRequest());
+    }
 }

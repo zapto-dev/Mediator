@@ -168,7 +168,7 @@ internal sealed class GenericRequestHandler<TRequest> : IRequestHandler<TRequest
         foreach (var registration in _enumerable)
         {
             if (registration.RequestType != requestType ||
-                registration.ResponseType != null)
+                registration.ResponseType != typeof(Unit))
             {
                 continue;
             }

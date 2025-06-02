@@ -18,6 +18,10 @@ public partial class MediatorBuilder
             _services.Add(new ServiceDescriptor(handlerType, handlerType, GetLifetime(scope)));
             _services.AddSingleton(new GenericRequestRegistration(requestType, responseType, handlerType));
         }
+        else if (responseType == typeof(Unit))
+        {
+            _services.Add(new ServiceDescriptor(typeof(IRequestHandler<>).MakeGenericType(requestType), handlerType, GetLifetime(scope)));
+        }
         else
         {
             _services.Add(new ServiceDescriptor(typeof(IRequestHandler<,>).MakeGenericType(requestType, responseType), handlerType, GetLifetime(scope)));
@@ -39,7 +43,7 @@ public partial class MediatorBuilder
         {
             var args = type.GetGenericArguments();
             var requestType = type.GetGenericArguments()[0];
-            var responseType = args.Length > 1 ? args[1] : null;
+            var responseType = args.Length > 1 ? args[1] : typeof(Unit);
 
             if (requestType.IsGenericType)
             {
