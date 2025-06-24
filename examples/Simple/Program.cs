@@ -22,7 +22,7 @@ services.AddMediator(upperNs, builder =>
     // Add a notification handler for "WriteLineNotification" with-in the mediator namespace "upper"
     builder.AddNotificationHandler((WriteLineNotification notification) =>
     {
-        Console.WriteLine(notification.Message.ToUpper());
+        Console.WriteLine(notification.Message?.ToUpper());
     });
 });
 
@@ -36,6 +36,6 @@ var message = await mediator.GetMessageAsync();
 await mediator.WriteLineAsync(message);
 await mediator.WriteLineAsync(upperNs, message);
 
-public record struct WriteLineNotification(string Message) : INotification;
+public record struct WriteLineNotification(string? Message) : INotification;
 
-public record struct GetMessage : IRequest<string>;
+public record struct GetMessage : IRequest<string?>;

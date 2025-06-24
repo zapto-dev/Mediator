@@ -75,6 +75,18 @@ public record Request : IRequest<string?>;";
     }
 
     [Fact]
+    public Task GenerateNullableClassDeep()
+    {
+        const string source = @"
+using MediatR;
+
+public interface IGetRequest<T> : IRequest<T?>;
+public record Request : IGetRequest<string>;";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
+
+    [Fact]
     public Task GenerateNullableValueType()
     {
         const string source = @"

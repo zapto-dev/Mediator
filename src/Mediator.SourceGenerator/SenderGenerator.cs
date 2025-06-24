@@ -368,11 +368,11 @@ public class SenderGenerator : IIncrementalGenerator
 
                             if (parameter.Name == parameterName)
                             {
-                                sb.AppendType(result.Type, false);
+                                sb.AppendType(result.Type);
                             }
                             else if (typeNames.TryGetValue(parameter.Name, out var result))
                             {
-                                sb.AppendType(result, false);
+                                sb.AppendType(result);
                             }
 
                             if (i != length - 1)
@@ -411,7 +411,7 @@ public class SenderGenerator : IIncrementalGenerator
 
                     AppendGenerics();
                     sb.Append("(this ");
-                    sb.AppendType(sender, false);
+                    sb.AppendType(sender);
                     sb.Append(" sender, ");
                     sb.AppendParameterDefinitions(method.Parameters, t =>
                     {
@@ -483,7 +483,7 @@ public class SenderGenerator : IIncrementalGenerator
 
                     AppendGenerics();
                     sb.Append("(this ");
-                    sb.AppendType(sender, false);
+                    sb.AppendType(sender);
                     sb.Append(" sender, ");
 
                     var hasRequiredProperties = FillParameters(result, constructor, parameters);
@@ -524,7 +524,7 @@ public class SenderGenerator : IIncrementalGenerator
                         }
 
                         sb.Append("new ");
-                        sb.AppendType(result.Type, false);
+                        sb.AppendType(result.Type);
                         sb.Append('(');
                         sb.AppendParameters(constructor.Parameters);
                         sb.Append(')');
