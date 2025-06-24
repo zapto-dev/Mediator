@@ -43,7 +43,9 @@ internal record SimpleParameter(
                 continue;
             }
 
-            if (!property.IsRequired || property.IsStatic || property.DeclaredAccessibility != Accessibility.Public)
+            var isRequired = property.IsRequired || HasRequiredAttribute(property);
+
+            if (!isRequired || property.IsStatic || property.DeclaredAccessibility != Accessibility.Public)
             {
                 continue;
             }
@@ -57,5 +59,18 @@ internal record SimpleParameter(
         }
 
         return new EquatableArray<SimpleParameter>(builder.ToImmutable());
+    }
+
+    private static bool HasRequiredAttribute(IPropertySymbol property)
+    {
+        foreach (var attribute in property.GetAttributes())
+        {
+            if (attribute.AttributeClass?.Name == "RequiredAttribute" &&
+                attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "System.ComponentModel.DataAnnotations")
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -21,8 +22,10 @@ public static class TestHelper
 
         var references = new List<MetadataReference>()
         {
+            MetadataReference.CreateFromFile(typeof(string).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(IRequest).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(IMediator).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(RequiredAttribute).Assembly.Location),
         };
 
         foreach (var type in extraTypes)

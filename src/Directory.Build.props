@@ -1,8 +1,8 @@
 <Project>
 
     <PropertyGroup>
-        <Version>1.0.0-alpha.19</Version>
-        <PackageVersion>1.0.0-alpha.19</PackageVersion>
+        <Version>1.0.0-alpha.20</Version>
+        <PackageVersion>1.0.0-alpha.20</PackageVersion>
         <Authors>Zapto</Authors>
         <RepositoryUrl>https://github.com/zapto-dev/Mediator</RepositoryUrl>
         <Copyright>Copyright © 2025 Zapto</Copyright>

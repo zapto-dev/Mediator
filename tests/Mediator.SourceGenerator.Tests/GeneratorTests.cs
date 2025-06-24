@@ -64,6 +64,28 @@ public record struct Notification(string Argument, int OptionalArgument = 0) : I
     }
 
     [Fact]
+    public Task GenerateNullableClass()
+    {
+        const string source = @"
+using MediatR;
+
+public record Request : IRequest<string?>;";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
+
+    [Fact]
+    public Task GenerateNullableValueType()
+    {
+        const string source = @"
+using MediatR;
+
+public record Request : IRequest<int?>;";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
+
+    [Fact]
     public Task GenerateGeneric()
     {
         const string source = @"
@@ -163,6 +185,21 @@ using MediatR;
 public class Request(string optionalParameter = ""a"") : IRequest
 {
     public required string RequiredProperty { get; set; }
+}
+";
+
+        return TestHelper.Verify<SenderGenerator>(source);
+    }
+
+    [Fact]
+    public Task GenerateClassWithRequiredAttribute()
+    {
+        const string source = @"
+using MediatR;
+
+public class Request : IRequest
+{
+    [System.ComponentModel.DataAnnotations.Required] public string RequiredProperty { get; set; }
 }
 ";
 

@@ -392,7 +392,6 @@ public class SenderGenerator : IIncrementalGenerator
                     sb.Append(visibilityValue);
                     sb.Append(" static ");
                     sb.AppendType(method.ReturnType,
-                        addNullable: false,
                         middleware: t =>
                         {
                             if (!typeNames.TryGetValue(t.Name, out var result))
@@ -400,7 +399,7 @@ public class SenderGenerator : IIncrementalGenerator
                                 return false;
                             }
 
-                            sb.AppendType(result, addNullable: false);
+                            sb.AppendType(result);
                             return true;
                         });
                     sb.Append(' ');
@@ -418,7 +417,7 @@ public class SenderGenerator : IIncrementalGenerator
                     {
                         if (t.Type.Name == parameterName)
                         {
-                            sb.AppendType(result.Type, addNullable: false);
+                            sb.AppendType(result.Type);
                             return AppendResult.Type;
                         }
 
@@ -464,7 +463,6 @@ public class SenderGenerator : IIncrementalGenerator
                     sb.Append(visibilityValue);
                     sb.Append(" static ");
                     sb.AppendType(method.ReturnType,
-                        addNullable: false,
                         middleware: t =>
                         {
                             if (!typeNames.TryGetValue(t.Name, out var result))
@@ -472,7 +470,7 @@ public class SenderGenerator : IIncrementalGenerator
                                 return false;
                             }
 
-                            sb.AppendType(result, addNullable: false);
+                            sb.AppendType(result);
                             return true;
                         });
 

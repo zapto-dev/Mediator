@@ -46,61 +46,62 @@ public static class StringBuilderExtensions
         if (type is not {SpecialType: SpecialType.None})
         {
             sb.Append(type.ToDisplayString());
-            return;
-        }
-
-        if (middleware?.Invoke(type) ?? false)
-        {
-            return;
-        }
-
-        if (type.IsTypeParameter)
-        {
-            sb.Append(type.Name);
-            addNullable = false;
         }
         else
         {
-            sb.Append("global::");
-
-            if (type.Namespace is not null)
+            if (middleware?.Invoke(type) ?? false)
             {
-                sb.Append(type.Namespace);
-                sb.Append('.');
+                return;
             }
 
-            sb.Append(type.Name);
-        }
-
-        if (type.IsGenericType)
-        {
-            sb.Append('<');
-
-            var length = type.TypeArguments.Length;
-            for (var i = 0; i < length; i++)
+            if (type.IsTypeParameter)
             {
-                if (addGenericNames)
-                {
-                    AppendType(sb, type.TypeArguments[i], false, middleware);
+                sb.Append(type.Name);
+                addNullable = false;
+            }
+            else
+            {
+                sb.Append("global::");
 
-                    if (i != length - 1)
+                if (type.Namespace is not null)
+                {
+                    sb.Append(type.Namespace);
+                    sb.Append('.');
+                }
+
+                sb.Append(type.Name);
+            }
+
+            if (type.IsGenericType)
+            {
+                sb.Append('<');
+
+                var length = type.TypeArguments.Length;
+                for (var i = 0; i < length; i++)
+                {
+                    if (addGenericNames)
                     {
-                        sb.Append(", ");
+                        AppendType(sb, type.TypeArguments[i], addNullable, middleware);
+
+                        if (i != length - 1)
+                        {
+                            sb.Append(", ");
+                        }
+                    }
+                    else if (i != length - 1)
+                    {
+                        sb.Append(",");
                     }
                 }
-                else if (i != length - 1)
-                {
-                    sb.Append(",");
-                }
-            }
 
-            sb.Append('>');
+                sb.Append('>');
+            }
         }
 
         if (addNullable &&
             !type.IsValueType &&
             type.Name is not ("Nullable" or "ValueTask") &&
-            type.NullableAnnotation is NullableAnnotation.Annotated or NullableAnnotation.None)
+            type.NullableAnnotation is NullableAnnotation.Annotated)
         {
             sb.Append('?');
         }
