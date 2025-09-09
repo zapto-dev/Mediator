@@ -12,12 +12,14 @@ internal record SimpleType(
     bool IsGenericType,
     bool IsTypeParameter,
     bool IsValueType,
+    bool IsEnum,
     string? Namespace,
     string ContainingAssembly,
     EquatableArray<SimpleTypeParameter> TypeParameters,
     EquatableArray<SimpleType> TypeArguments,
     EquatableArray<SimpleConstructor> Constructors,
-    EquatableArray<SimpleParameter> RequiredProperties
+    EquatableArray<SimpleParameter> RequiredProperties,
+    EquatableArray<SimpleEnumValue> EnumValues
 )
 {
     public string UniqueId => Namespace is null ? Name : $"{Namespace.Replace('.', '_')}_{Name}";
@@ -42,6 +44,27 @@ internal record SimpleType(
 
     public static SimpleType FromSymbol(ITypeSymbol symbol, bool withConstructors = false)
     {
+        ImmutableArray<SimpleEnumValue> enumValues;
+
+        if (symbol is INamedTypeSymbol { TypeKind: TypeKind.Enum } namedType)
+        {
+            var builder = ImmutableArray.CreateBuilder<SimpleEnumValue>();
+
+            foreach (var member in namedType.GetMembers().OfType<IFieldSymbol>())
+            {
+                if (member.HasConstantValue && member.DeclaredAccessibility == Accessibility.Public)
+                {
+                    builder.Add(new SimpleEnumValue((int)member.ConstantValue!, member.Name));
+                }
+            }
+
+            enumValues = builder.ToImmutable();
+        }
+        else
+        {
+            enumValues = ImmutableArray<SimpleEnumValue>.Empty;
+        }
+
         if (symbol is not INamedTypeSymbol namedTypeSymbol)
         {
             return new SimpleType(
@@ -52,12 +75,14 @@ internal record SimpleType(
                 false,
                 symbol is ITypeParameterSymbol,
                 symbol.IsValueType,
+                symbol.TypeKind == TypeKind.Enum,
                 symbol.ContainingNamespace.IsGlobalNamespace ? null : symbol.GetNamespace(),
                 symbol.ContainingAssembly.Name,
                 EquatableArray<SimpleTypeParameter>.Empty,
                 EquatableArray<SimpleType>.Empty,
                 EquatableArray<SimpleConstructor>.Empty,
-                EquatableArray<SimpleParameter>.Empty
+                EquatableArray<SimpleParameter>.Empty,
+                enumValues
             );
         }
 
@@ -69,12 +94,14 @@ internal record SimpleType(
             namedTypeSymbol.IsGenericType,
             false,
             namedTypeSymbol.IsValueType,
+            namedTypeSymbol.TypeKind == TypeKind.Enum,
             namedTypeSymbol.ContainingNamespace.IsGlobalNamespace ? null : namedTypeSymbol.GetNamespace(),
             namedTypeSymbol.ContainingAssembly.Name,
             SimpleTypeParameter.FromArray(namedTypeSymbol.TypeParameters),
             FromArray(namedTypeSymbol.TypeArguments),
             withConstructors ? SimpleConstructor.FromArray(namedTypeSymbol.Constructors) : EquatableArray<SimpleConstructor>.Empty,
-            withConstructors ? SimpleParameter.GetRequiredProperties(namedTypeSymbol) : EquatableArray<SimpleParameter>.Empty
+            withConstructors ? SimpleParameter.GetRequiredProperties(namedTypeSymbol) : EquatableArray<SimpleParameter>.Empty,
+            enumValues
         );
     }
 

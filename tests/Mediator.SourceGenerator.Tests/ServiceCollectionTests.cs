@@ -67,4 +67,24 @@ public class RequestHandler : IRequestHandler<Request>
 
         return TestHelper.Verify<SenderGenerator>(source, typeof(Zapto.Mediator.ServiceProviderMediator));
     }
+
+
+    [Fact]
+    public Task GenerateEnumDefault()
+    {
+        const string source = @"
+using MediatR;
+using Zapto.Mediator;
+
+public enum MyEnum
+{
+    First,
+    Second
+}
+
+public record Request(MyEnum Test = MyEnum.First) : IRequest;
+";
+
+        return TestHelper.Verify<SenderGenerator>(source, typeof(Zapto.Mediator.ServiceProviderMediator));
+    }
 }

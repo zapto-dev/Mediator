@@ -155,7 +155,18 @@ public static class StringBuilderExtensions
                 if (parameter.HasExplicitDefaultValue)
                 {
                     sb.Append(" = ");
-                    sb.AppendValue(parameter.ExplicitDefaultValue);
+
+                    if (parameter.Type.IsEnum &&
+                        parameter.Type.EnumValues.FirstOrDefault(x => x.Value.Equals((int?)parameter.ExplicitDefaultValue)) is { } enumValue)
+                    {
+                        sb.AppendType(parameter.Type);
+                        sb.Append('.');
+                        sb.Append(enumValue.Name);
+                    }
+                    else
+                    {
+                        sb.AppendValue(parameter.ExplicitDefaultValue);
+                    }
                 }
             }
 
