@@ -102,7 +102,10 @@ internal sealed class GenericNotificationHandler<TNotification>
                 continue;
             }
 
-            var type = registration.HandlerType.MakeGenericType(arguments);
+            var type = registration.HandlerType.IsGenericType
+                ? registration.HandlerType.MakeGenericType(arguments)
+                : registration.HandlerType;
+            
             var handler = _serviceProvider.GetRequiredService(type);
 
             await ((INotificationHandler<TNotification>)handler!).Handle(provider, notification, ct);

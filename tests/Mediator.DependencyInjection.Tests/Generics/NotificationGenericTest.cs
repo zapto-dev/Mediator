@@ -19,6 +19,7 @@ public class NotificationGenericTest
 			{
 				b.AddNotificationHandler(typeof(GenericNotificationHandler<>));
 				b.AddNotificationHandler(typeof(GenericNotificationHandler<>));
+				b.AddNotificationHandler<StringGenericNotificationHandler>();
 			})
 			.AddSingleton(result)
 			.BuildServiceProvider();
@@ -27,14 +28,14 @@ public class NotificationGenericTest
 			.GetRequiredService<IMediator>()
 			.Publish(new GenericNotification<string?>(expected));
 
-		Assert.Equal(2, result.Values.Count);
+		Assert.Equal(3, result.Values.Count);
 		result.Values.Clear();
 
 		await provider
 			.GetRequiredService<IMediator>()
 			.Publish(new GenericNotification<string?>(null));
 
-		Assert.Equal(2, result.Values.Count);
+		Assert.Equal(3, result.Values.Count);
 	}
 
 	[Fact]

@@ -88,7 +88,10 @@ internal sealed class GenericStreamRequestHandler<TRequest, TResponse> : IStream
                 continue;
             }
 
-            var type = registration.HandlerType.MakeGenericType(arguments);
+            var type = registration.HandlerType.IsGenericType
+                ? registration.HandlerType.MakeGenericType(arguments)
+                : registration.HandlerType;
+
             var handler = (IStreamRequestHandler<TRequest, TResponse>) _serviceProvider.GetRequiredService(type);
 
             _cache.RequestHandlerType = type;

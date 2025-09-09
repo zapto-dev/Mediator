@@ -94,7 +94,10 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
                 continue;
             }
 
-            var type = registration.HandlerType.MakeGenericType(arguments);
+            var type = registration.HandlerType.IsGenericType
+                ? registration.HandlerType.MakeGenericType(arguments)
+                : registration.HandlerType;
+
             var handler = (IRequestHandler<TRequest, TResponse>) _serviceProvider.GetRequiredService(type);
 
             _cache.RequestHandlerType = type;
