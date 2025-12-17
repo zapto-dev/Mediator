@@ -1,8 +1,8 @@
 <Project>
 
     <PropertyGroup>
-        <Version>1.0.0-alpha.23</Version>
-        <PackageVersion>1.0.0-alpha.23</PackageVersion>
+        <Version>1.0.0-alpha.24</Version>
+        <PackageVersion>1.0.0-alpha.24</PackageVersion>
         <Authors>Zapto</Authors>
         <RepositoryUrl>https://github.com/zapto-dev/Mediator</RepositoryUrl>
         <Copyright>Copyright © 2025 Zapto</Copyright>
@@ -17,6 +17,10 @@
 
     <PropertyGroup Condition="'$(TargetFramework)' == 'net9.0'">
         <ExtensionVersion>9.0.0</ExtensionVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+        <ExtensionVersion>10.0.0</ExtensionVersion>
     </PropertyGroup>
 
 </Project>

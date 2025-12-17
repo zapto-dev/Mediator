@@ -27,6 +27,8 @@ internal sealed class GenericStreamRequestRegistration
 internal sealed class GenericStreamRequestCache<TRequest, TResponse>
 {
     public Type? RequestHandlerType { get; set; }
+
+    public List<GenericStreamRequestRegistration>? MatchingRegistrations { get; set; }
 }
 
 internal sealed class GenericStreamRequestHandler<TRequest, TResponse> : IStreamRequestHandler<TRequest, TResponse>
@@ -80,17 +82,37 @@ internal sealed class GenericStreamRequestHandler<TRequest, TResponse> : IStream
             responseType = responseType.GetGenericTypeDefinition();
         }
 
-        foreach (var registration in _enumerable)
+        // Cache matching registrations on first call to avoid enumerating on every Handle call
+        if (_cache.MatchingRegistrations == null)
         {
-            if (registration.RequestType != requestType ||
-                registration.ResponseType is not null && registration.ResponseType != responseType)
+            _cache.MatchingRegistrations = GenericTypeHelper.CacheMatchingRegistrations(
+                _enumerable,
+                r => r.RequestType,
+                requestType);
+        }
+
+        foreach (var registration in _cache.MatchingRegistrations)
+        {
+            if (registration.ResponseType is not null && registration.ResponseType != responseType)
             {
                 continue;
             }
 
-            var type = registration.HandlerType.IsGenericType
-                ? registration.HandlerType.MakeGenericType(arguments)
-                : registration.HandlerType;
+            Type type;
+            if (registration.HandlerType.IsGenericType)
+            {
+                // Check if the generic arguments satisfy the handler's constraints
+                if (!GenericTypeHelper.CanMakeGenericType(registration.HandlerType, arguments))
+                {
+                    continue;
+                }
+
+                type = registration.HandlerType.MakeGenericType(arguments);
+            }
+            else
+            {
+                type = registration.HandlerType;
+            }
 
             var handler = (IStreamRequestHandler<TRequest, TResponse>) _serviceProvider.GetRequiredService(type);
 

@@ -39,6 +39,8 @@ internal sealed class GenericNotificationCache<TNotification> : INotificationCac
 {
     public List<Type>? HandlerTypes { get; set; }
 
+    public List<GenericNotificationRegistration>? MatchingRegistrations { get; set; }
+
     public List<IHandlerRegistration> Registrations { get; } = new();
 
     public SemaphoreSlim Lock { get; } = new(1, 1);
@@ -95,17 +97,32 @@ internal sealed class GenericNotificationHandler<TNotification>
         var genericType = notificationType.GetGenericTypeDefinition();
         var handlerTypes = new List<Type>();
 
-        foreach (var registration in _enumerable)
+        // Cache matching registrations on first call to avoid enumerating on every Handle call
+        if (_cache.MatchingRegistrations == null)
         {
-            if (registration.NotificationType != genericType)
+            _cache.MatchingRegistrations = GenericTypeHelper.CacheMatchingRegistrations(
+                _enumerable,
+                r => r.NotificationType,
+                genericType);
+        }
+
+        foreach (var registration in _cache.MatchingRegistrations)
+        {
+            Type type;
+            if (registration.HandlerType.IsGenericType)
             {
-                continue;
+                if (!GenericTypeHelper.CanMakeGenericType(registration.HandlerType, arguments))
+                {
+                    continue;
+                }
+
+                type = registration.HandlerType.MakeGenericType(arguments);
+            }
+            else
+            {
+                type = registration.HandlerType;
             }
 
-            var type = registration.HandlerType.IsGenericType
-                ? registration.HandlerType.MakeGenericType(arguments)
-                : registration.HandlerType;
-            
             var handler = _serviceProvider.GetRequiredService(type);
 
             await ((INotificationHandler<TNotification>)handler!).Handle(provider, notification, ct);

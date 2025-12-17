@@ -28,11 +28,15 @@ internal sealed class GenericRequestRegistration
 internal sealed class GenericRequestCache<TRequest, TResponse>
 {
     public Type? RequestHandlerType { get; set; }
+
+    public List<GenericRequestRegistration>? MatchingRegistrations { get; set; }
 }
 
 internal sealed class GenericRequestCache<TRequest>
 {
     public Type? RequestHandlerType { get; set; }
+
+    public List<GenericRequestRegistration>? MatchingRegistrations { get; set; }
 }
 
 internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>
@@ -86,17 +90,37 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
             responseType = responseType.GetGenericTypeDefinition();
         }
 
-        foreach (var registration in _enumerable)
+        // Cache matching registrations on first call to avoid enumerating on every Handle call
+        if (_cache.MatchingRegistrations == null)
         {
-            if (registration.RequestType != requestType ||
-                registration.ResponseType is not null && registration.ResponseType != responseType)
+            _cache.MatchingRegistrations = GenericTypeHelper.CacheMatchingRegistrations(
+                _enumerable,
+                r => r.RequestType,
+                requestType);
+        }
+
+        foreach (var registration in _cache.MatchingRegistrations)
+        {
+            if (registration.ResponseType is not null && registration.ResponseType != responseType)
             {
                 continue;
             }
 
-            var type = registration.HandlerType.IsGenericType
-                ? registration.HandlerType.MakeGenericType(arguments)
-                : registration.HandlerType;
+            Type type;
+            if (registration.HandlerType.IsGenericType)
+            {
+                // Check if the generic arguments satisfy the handler's constraints
+                if (!GenericTypeHelper.CanMakeGenericType(registration.HandlerType, arguments))
+                {
+                    continue;
+                }
+
+                type = registration.HandlerType.MakeGenericType(arguments);
+            }
+            else
+            {
+                type = registration.HandlerType;
+            }
 
             var handler = (IRequestHandler<TRequest, TResponse>) _serviceProvider.GetRequiredService(type);
 
@@ -168,15 +192,38 @@ internal sealed class GenericRequestHandler<TRequest> : IRequestHandler<TRequest
 
         requestType = requestType.GetGenericTypeDefinition();
 
-        foreach (var registration in _enumerable)
+        // Cache matching registrations on first call to avoid enumerating on every Handle call
+        if (_cache.MatchingRegistrations == null)
         {
-            if (registration.RequestType != requestType ||
-                registration.ResponseType != typeof(Unit))
+            _cache.MatchingRegistrations = GenericTypeHelper.CacheMatchingRegistrations(
+                _enumerable,
+                r => r.RequestType,
+                requestType);
+        }
+
+        foreach (var registration in _cache.MatchingRegistrations)
+        {
+            if (registration.ResponseType != typeof(Unit))
             {
                 continue;
             }
 
-            var type = registration.HandlerType.MakeGenericType(arguments);
+            Type type;
+            if (registration.HandlerType.IsGenericType)
+            {
+                // Check if the generic arguments satisfy the handler's constraints
+                if (!GenericTypeHelper.CanMakeGenericType(registration.HandlerType, arguments))
+                {
+                    continue;
+                }
+
+                type = registration.HandlerType.MakeGenericType(arguments);
+            }
+            else
+            {
+                type = registration.HandlerType;
+            }
+
             var handler = (IRequestHandler<TRequest>) _serviceProvider.GetRequiredService(type);
 
             _cache.RequestHandlerType = type;
