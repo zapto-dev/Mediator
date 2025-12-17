@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -26,24 +24,40 @@ internal sealed class GenericStreamRequestRegistration
 
 internal sealed class GenericStreamRequestCache<TRequest, TResponse>
 {
+    public GenericStreamRequestCache(IEnumerable<GenericStreamRequestRegistration> registrations)
+    {
+        var requestType = typeof(TRequest);
+        if (requestType.IsGenericType)
+        {
+            var genericType = requestType.GetGenericTypeDefinition();
+            MatchingRegistrations = GenericTypeHelper.CacheMatchingRegistrations(
+                registrations,
+                r => r.RequestType,
+                genericType);
+        }
+        else
+        {
+            MatchingRegistrations = new List<GenericStreamRequestRegistration>();
+        }
+    }
+
     public Type? RequestHandlerType { get; set; }
+
+    public List<GenericStreamRequestRegistration> MatchingRegistrations { get; }
 }
 
 internal sealed class GenericStreamRequestHandler<TRequest, TResponse> : IStreamRequestHandler<TRequest, TResponse>
     where TRequest : IStreamRequest<TResponse>
 {
     private readonly GenericStreamRequestCache<TRequest, TResponse> _cache;
-    private readonly IEnumerable<GenericStreamRequestRegistration> _enumerable;
     private readonly IServiceProvider _serviceProvider;
     private readonly IDefaultStreamRequestHandler? _defaultHandler;
 
     public GenericStreamRequestHandler(
-        IEnumerable<GenericStreamRequestRegistration> enumerable,
         IServiceProvider serviceProvider,
         GenericStreamRequestCache<TRequest, TResponse> cache,
         IDefaultStreamRequestHandler? defaultHandler = null)
     {
-        _enumerable = enumerable;
         _serviceProvider = serviceProvider;
         _cache = cache;
         _defaultHandler = defaultHandler;
@@ -80,17 +94,29 @@ internal sealed class GenericStreamRequestHandler<TRequest, TResponse> : IStream
             responseType = responseType.GetGenericTypeDefinition();
         }
 
-        foreach (var registration in _enumerable)
+
+        foreach (var registration in _cache.MatchingRegistrations)
         {
-            if (registration.RequestType != requestType ||
-                registration.ResponseType is not null && registration.ResponseType != responseType)
+            if (registration.ResponseType is not null && registration.ResponseType != responseType)
             {
                 continue;
             }
 
-            var type = registration.HandlerType.IsGenericType
-                ? registration.HandlerType.MakeGenericType(arguments)
-                : registration.HandlerType;
+            Type type;
+            if (registration.HandlerType.IsGenericType)
+            {
+                // Check if the generic arguments satisfy the handler's constraints
+                if (!GenericTypeHelper.CanMakeGenericType(registration.HandlerType, arguments))
+                {
+                    continue;
+                }
+
+                type = registration.HandlerType.MakeGenericType(arguments);
+            }
+            else
+            {
+                type = registration.HandlerType;
+            }
 
             var handler = (IStreamRequestHandler<TRequest, TResponse>) _serviceProvider.GetRequiredService(type);
 

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,7 +36,26 @@ internal interface INotificationCache
 
 internal sealed class GenericNotificationCache<TNotification> : INotificationCache
 {
+    public GenericNotificationCache(IEnumerable<GenericNotificationRegistration> registrations)
+    {
+        var notificationType = typeof(TNotification);
+        if (notificationType.IsGenericType)
+        {
+            var genericType = notificationType.GetGenericTypeDefinition();
+            MatchingRegistrations = GenericTypeHelper.CacheMatchingRegistrations(
+                registrations,
+                r => r.NotificationType,
+                genericType);
+        }
+        else
+        {
+            MatchingRegistrations = new List<GenericNotificationRegistration>();
+        }
+    }
+
     public List<Type>? HandlerTypes { get; set; }
+
+    public List<GenericNotificationRegistration> MatchingRegistrations { get; }
 
     public List<IHandlerRegistration> Registrations { get; } = new();
 
@@ -48,12 +66,10 @@ internal sealed class GenericNotificationHandler<TNotification>
     where TNotification : INotification
 {
     private readonly GenericNotificationCache<TNotification> _cache;
-    private readonly IEnumerable<GenericNotificationRegistration> _enumerable;
     private readonly IServiceProvider _serviceProvider;
 
-    public GenericNotificationHandler(IEnumerable<GenericNotificationRegistration> enumerable, IServiceProvider serviceProvider, GenericNotificationCache<TNotification> cache)
+    public GenericNotificationHandler(IServiceProvider serviceProvider, GenericNotificationCache<TNotification> cache)
     {
-        _enumerable = enumerable;
         _serviceProvider = serviceProvider;
         _cache = cache;
     }
@@ -95,17 +111,24 @@ internal sealed class GenericNotificationHandler<TNotification>
         var genericType = notificationType.GetGenericTypeDefinition();
         var handlerTypes = new List<Type>();
 
-        foreach (var registration in _enumerable)
+
+        foreach (var registration in _cache.MatchingRegistrations)
         {
-            if (registration.NotificationType != genericType)
+            Type type;
+            if (registration.HandlerType.IsGenericType)
             {
-                continue;
+                if (!GenericTypeHelper.CanMakeGenericType(registration.HandlerType, arguments))
+                {
+                    continue;
+                }
+
+                type = registration.HandlerType.MakeGenericType(arguments);
+            }
+            else
+            {
+                type = registration.HandlerType;
             }
 
-            var type = registration.HandlerType.IsGenericType
-                ? registration.HandlerType.MakeGenericType(arguments)
-                : registration.HandlerType;
-            
             var handler = _serviceProvider.GetRequiredService(type);
 
             await ((INotificationHandler<TNotification>)handler!).Handle(provider, notification, ct);

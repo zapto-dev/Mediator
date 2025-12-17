@@ -113,4 +113,18 @@ public class RequestGenericTest
 
         Assert.True(handler.CallCount > 0, "Handler was not called");
     }
+
+    [Fact]
+    public async Task TestThrowNotFound()
+    {
+        var handler = Substitute.For<IRequestHandler<GenericVoidRequest<string>>>();
+
+        var serviceProvider = new ServiceCollection()
+            .AddMediator(b => b.AddRequestHandler(handler))
+            .BuildServiceProvider();
+
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        await Assert.ThrowsAsync<HandlerNotFoundException>(async () => await mediator.Send(new GenericVoidRequest<int>(1)));
+    }
 }

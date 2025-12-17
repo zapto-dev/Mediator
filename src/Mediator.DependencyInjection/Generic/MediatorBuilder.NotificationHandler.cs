@@ -12,7 +12,7 @@ public partial class MediatorBuilder
         Type handlerType,
         RegistrationScope scope = RegistrationScope.Transient)
     {
-        if (notificationType.IsGenericType)
+        if (handlerType.IsGenericTypeDefinition)
         {
             _services.Add(new ServiceDescriptor(handlerType, handlerType, GetLifetime(scope)));
             _services.AddSingleton(new GenericNotificationRegistration(notificationType, handlerType));
@@ -35,7 +35,8 @@ public partial class MediatorBuilder
         {
             var notificationType = type.GetGenericArguments()[0];
 
-            if (notificationType.IsGenericType)
+            // Only convert to generic type definition if the handler itself is an open generic
+            if (handlerType.IsGenericTypeDefinition && notificationType.IsGenericType)
             {
                 notificationType = notificationType.GetGenericTypeDefinition();
             }
