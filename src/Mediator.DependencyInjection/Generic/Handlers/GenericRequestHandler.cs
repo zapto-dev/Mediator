@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -27,33 +26,64 @@ internal sealed class GenericRequestRegistration
 
 internal sealed class GenericRequestCache<TRequest, TResponse>
 {
+    public GenericRequestCache(IEnumerable<GenericRequestRegistration> registrations)
+    {
+        var requestType = typeof(TRequest);
+        if (requestType.IsGenericType)
+        {
+            var genericType = requestType.GetGenericTypeDefinition();
+            MatchingRegistrations = GenericTypeHelper.CacheMatchingRegistrations(
+                registrations,
+                r => r.RequestType,
+                genericType);
+        }
+        else
+        {
+            MatchingRegistrations = new List<GenericRequestRegistration>();
+        }
+    }
+
     public Type? RequestHandlerType { get; set; }
 
-    public List<GenericRequestRegistration>? MatchingRegistrations { get; set; }
+    public List<GenericRequestRegistration> MatchingRegistrations { get; }
 }
 
 internal sealed class GenericRequestCache<TRequest>
 {
+    public GenericRequestCache(IEnumerable<GenericRequestRegistration> registrations)
+    {
+        var requestType = typeof(TRequest);
+        if (requestType.IsGenericType)
+        {
+            var genericType = requestType.GetGenericTypeDefinition();
+            MatchingRegistrations = GenericTypeHelper.CacheMatchingRegistrations(
+                registrations,
+                r => r.RequestType,
+                genericType);
+        }
+        else
+        {
+            MatchingRegistrations = new List<GenericRequestRegistration>();
+        }
+    }
+
     public Type? RequestHandlerType { get; set; }
 
-    public List<GenericRequestRegistration>? MatchingRegistrations { get; set; }
+    public List<GenericRequestRegistration> MatchingRegistrations { get; }
 }
 
 internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     private readonly GenericRequestCache<TRequest, TResponse> _cache;
-    private readonly IEnumerable<GenericRequestRegistration> _enumerable;
     private readonly IServiceProvider _serviceProvider;
     private readonly IDefaultRequestHandler? _defaultHandler;
 
     public GenericRequestHandler(
-        IEnumerable<GenericRequestRegistration> enumerable,
         IServiceProvider serviceProvider,
         GenericRequestCache<TRequest, TResponse> cache,
         IDefaultRequestHandler? defaultHandler = null)
     {
-        _enumerable = enumerable;
         _serviceProvider = serviceProvider;
         _cache = cache;
         _defaultHandler = defaultHandler;
@@ -90,14 +120,6 @@ internal sealed class GenericRequestHandler<TRequest, TResponse> : IRequestHandl
             responseType = responseType.GetGenericTypeDefinition();
         }
 
-        // Cache matching registrations on first call to avoid enumerating on every Handle call
-        if (_cache.MatchingRegistrations == null)
-        {
-            _cache.MatchingRegistrations = GenericTypeHelper.CacheMatchingRegistrations(
-                _enumerable,
-                r => r.RequestType,
-                requestType);
-        }
 
         foreach (var registration in _cache.MatchingRegistrations)
         {
@@ -149,17 +171,14 @@ internal sealed class GenericRequestHandler<TRequest> : IRequestHandler<TRequest
     where TRequest : IRequest
 {
     private readonly GenericRequestCache<TRequest> _cache;
-    private readonly IEnumerable<GenericRequestRegistration> _enumerable;
     private readonly IServiceProvider _serviceProvider;
     private readonly IDefaultRequestHandler? _defaultHandler;
 
     public GenericRequestHandler(
-        IEnumerable<GenericRequestRegistration> enumerable,
         IServiceProvider serviceProvider,
         GenericRequestCache<TRequest> cache,
         IDefaultRequestHandler? defaultHandler = null)
     {
-        _enumerable = enumerable;
         _serviceProvider = serviceProvider;
         _cache = cache;
         _defaultHandler = defaultHandler;
@@ -192,14 +211,6 @@ internal sealed class GenericRequestHandler<TRequest> : IRequestHandler<TRequest
 
         requestType = requestType.GetGenericTypeDefinition();
 
-        // Cache matching registrations on first call to avoid enumerating on every Handle call
-        if (_cache.MatchingRegistrations == null)
-        {
-            _cache.MatchingRegistrations = GenericTypeHelper.CacheMatchingRegistrations(
-                _enumerable,
-                r => r.RequestType,
-                requestType);
-        }
 
         foreach (var registration in _cache.MatchingRegistrations)
         {
