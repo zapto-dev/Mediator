@@ -79,7 +79,7 @@ public sealed class ServiceProviderMediator : IMediator
             {
                 invokeAsync = cb =>
                 {
-                    _ = Task.Run(() => invoker(cb));
+                    _ = invoker(cb);
                     return Task.CompletedTask;
                 };
             }
