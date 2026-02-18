@@ -2,10 +2,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -36,10 +34,10 @@ public class BackgroundQueueService
             throw new OperationCanceledException("Cannot schedule work item since the application is stopping");
         }
 
-        _workItems.Enqueue(workItem);
-
         lock (_workers)
         {
+            _workItems.Enqueue(workItem);
+
             if (_workers.Count < _options.Value.MaxDegreeOfParallelism)
             {
                 var worker = new Worker
@@ -47,7 +45,11 @@ public class BackgroundQueueService
                     Notification = notification
                 };
 
-                worker.Task = Task.Factory.StartNew(() => ProcessBackgroundWorkItem(worker), TaskCreationOptions.LongRunning);
+                worker.Task = Task.Factory.StartNew(
+                    () => ProcessBackgroundWorkItem(worker),
+                    CancellationToken.None,
+                    TaskCreationOptions.None,
+                    TaskScheduler.Default).Unwrap();
                 _workers.Add(worker);
             }
         }
@@ -93,9 +95,13 @@ public class BackgroundQueueService
                 resultingTask = await Task.WhenAny(task, tcs.Task);
 #endif
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch
             {
-                // ignore
+                // worker exceptions are already logged at the source; ignore here
             }
 
 #if !NET
@@ -127,6 +133,7 @@ public class BackgroundQueueService
             // Process next work item
             if (!_workItems.TryDequeue(out var workItem))
             {
+                await Task.Yield();
                 continue;
             }
 

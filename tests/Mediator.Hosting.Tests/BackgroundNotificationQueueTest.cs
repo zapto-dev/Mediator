@@ -252,4 +252,89 @@ public class BackgroundNotificationQueueTest
         mediator.Publish(new Notification());
         Assert.True(cancelled.Value);
     }
+
+    [Fact]
+    public async Task WaitForBackgroundTasksCancelledWhenTokenCancelled()
+    {
+        using var cts = new CancellationTokenSource();
+
+        var tcs = new TaskCompletionSource<bool>();
+
+        var host = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings());
+
+        host.Services.AddMediator(b =>
+        {
+            b.AddNotificationHandler(async (Notification _) => await tcs.Task);
+            b.AddHostingBackgroundScheduler();
+        });
+
+        var app = host.Build();
+
+        await app.StartAsync();
+
+        var backgroundQueue = app.Services.GetRequiredService<BackgroundQueueService>();
+        var mediator = app.Services.GetRequiredService<IBackgroundPublisher>();
+
+        mediator.Publish(new Notification());
+
+        // Cancel before the handler finishes
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => backgroundQueue.WaitForBackgroundTasksAsync(cts.Token));
+
+        tcs.SetResult(true);
+
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task StopAsyncCompletesWhenHandlerIsStuck()
+    {
+        // A handler that never completes should not prevent the host from stopping.
+        // StopAsync passes a cancellation token that fires after HostOptions.ShutdownTimeout.
+        // We configure a short timeout to keep the test fast.
+        var tcs = new TaskCompletionSource<bool>();
+
+        var host = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings());
+
+        host.Services.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(2));
+        host.Services.AddMediator(b =>
+        {
+            b.AddNotificationHandler(async (Notification _) => await tcs.Task); // never completes
+            b.AddHostingBackgroundScheduler();
+        });
+
+        var app = host.Build();
+        await app.StartAsync();
+
+        var mediator = app.Services.GetRequiredService<IBackgroundPublisher>();
+        mediator.Publish(new Notification());
+
+        // StopAsync should complete within the shutdown timeout, not hang forever
+        var stopTask = app.StopAsync();
+        var finished = await Task.WhenAny(stopTask, Task.Delay(TimeSpan.FromSeconds(10))) == stopTask;
+        Assert.True(finished, "StopAsync should complete within the shutdown timeout even when a handler is stuck");
+
+        // Clean up the stuck handler so it doesn't leak
+        tcs.SetResult(true);
+    }
+
+    [Fact]
+    public async Task AddHostingBackgroundSchedulerReplacesDefaultPublisher()
+    {
+        var host = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings());
+
+        host.Services.AddMediator(b =>
+        {
+            b.AddHostingBackgroundScheduler();
+        });
+
+        var app = host.Build();
+
+        // There must be exactly one IBackgroundPublisher registration and it must be BackgroundPublisher,
+        // not DefaultBackgroundPublisher (which AddMediator registers as a fallback).
+        var publisher = app.Services.GetRequiredService<IBackgroundPublisher>();
+        Assert.Equal("BackgroundPublisher", publisher.GetType().Name);
+    }
 }

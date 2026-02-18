@@ -19,7 +19,13 @@ internal static class NotificationAttributeHandler<T>
 
             if (attribute == null) continue;
 
-            var notificationType = method.GetParameters()[0].ParameterType;
+            var parameters = method.GetParameters();
+            if (parameters.Length == 0)
+            {
+                throw new InvalidOperationException($"Method '{method.Name}' on '{typeof(T).FullName}' is decorated with [NotificationHandler] but has no parameters. The first parameter must be the notification type.");
+            }
+
+            var notificationType = parameters[0].ParameterType;
 
             if (!typeof(INotification).IsAssignableFrom(notificationType))
             {
@@ -45,8 +51,14 @@ internal static class NotificationAttributeHandler<T>
             var registration = new HandlerRegistration(cache, invoker, handler, middleware);
 
             cache.Lock.Wait();
-            cache.Registrations.Add(registration);
-            cache.Lock.Release();
+            try
+            {
+                cache.Registrations.Add(registration);
+            }
+            finally
+            {
+                cache.Lock.Release();
+            }
 
             registrations.Add(registration);
         }
@@ -70,8 +82,15 @@ internal static class NotificationAttributeHandler<T>
                 var owner = registration.Owner;
 
                 owner.Lock.Wait();
-                owner.Registrations.Remove(registration);
-                owner.Lock.Release();
+                try
+                {
+                    registration.IsDisposed = true;
+                    owner.Registrations.Remove(registration);
+                }
+                finally
+                {
+                    owner.Lock.Release();
+                }
             }
         }
     }
@@ -97,7 +116,14 @@ internal static class NotificationAttributeHandler<T>
 
         public Func<T, IServiceProvider, object, CancellationToken, ValueTask> Invoke { get; }
 
-        public bool IsDisposed { get; set; }
+        private bool _isDisposed;
+
+        public bool IsDisposed
+        {
+            get => Volatile.Read(ref _isDisposed);
+            // Written under Owner.Lock, but Volatile.Write ensures visibility for lock-free reads in InvokeAsync
+            set => Volatile.Write(ref _isDisposed, value);
+        }
 
         public ValueTask InvokeAsync(IServiceProvider provider, object notification, CancellationToken cancellationToken)
         {

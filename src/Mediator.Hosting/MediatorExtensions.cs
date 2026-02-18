@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Zapto.Mediator.Options;
 using Zapto.Mediator.Services;
 
@@ -16,7 +17,7 @@ public static class MediatorExtensions
 
         mediatorBuilder.Services.AddSingleton<BackgroundQueueService>();
         mediatorBuilder.Services.AddHostedService<BackgroundQueueHostedService>();
-        mediatorBuilder.Services.AddSingleton<IBackgroundPublisher, BackgroundPublisher>();
+        mediatorBuilder.Services.Replace(ServiceDescriptor.Singleton<IBackgroundPublisher, BackgroundPublisher>());
 
         if (configure is not null)
         {

@@ -43,7 +43,8 @@ internal sealed class GenericRequestCache<TRequest, TResponse>
         }
     }
 
-    public Type? RequestHandlerType { get; set; }
+    private Type? _requestHandlerType;
+    public Type? RequestHandlerType { get => Volatile.Read(ref _requestHandlerType); set => Volatile.Write(ref _requestHandlerType, value); }
 
     public List<GenericRequestRegistration> MatchingRegistrations { get; }
 }
@@ -67,7 +68,8 @@ internal sealed class GenericRequestCache<TRequest>
         }
     }
 
-    public Type? RequestHandlerType { get; set; }
+    private Type? _requestHandlerType;
+    public Type? RequestHandlerType { get => Volatile.Read(ref _requestHandlerType); set => Volatile.Write(ref _requestHandlerType, value); }
 
     public List<GenericRequestRegistration> MatchingRegistrations { get; }
 }

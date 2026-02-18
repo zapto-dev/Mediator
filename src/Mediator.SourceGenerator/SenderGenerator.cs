@@ -14,7 +14,7 @@ namespace Zapto.Mediator.Generator;
 [Generator]
 public class SenderGenerator : IIncrementalGenerator
 {
-    private bool _generateAssemblyInfo;
+    private readonly bool _generateAssemblyInfo;
 
     private static readonly string[] Interfaces =
     [

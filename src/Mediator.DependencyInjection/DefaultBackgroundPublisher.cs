@@ -18,49 +18,62 @@ internal class DefaultBackgroundPublisher : IBackgroundPublisher
     /// <inheritdoc />
     public void Publish(object notification)
     {
-        _ = Task.Run(async () =>
+        ObserveTask(Task.Run(async () =>
         {
             using var scope = _scopeFactory.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IPublisher>();
 
             await mediator.Publish(notification, CancellationToken.None);
-        }, CancellationToken.None);
+        }, CancellationToken.None));
     }
 
     /// <inheritdoc />
     public void Publish(MediatorNamespace ns, object notification)
     {
-        _ = Task.Run(async () =>
+        ObserveTask(Task.Run(async () =>
         {
             using var scope = _scopeFactory.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IPublisher>();
 
             await mediator.Publish(ns, notification, CancellationToken.None);
-        }, CancellationToken.None);
+        }, CancellationToken.None));
     }
 
     /// <inheritdoc />
     public void Publish<TNotification>(TNotification notification) where TNotification : INotification
     {
-        _ = Task.Run(async () =>
+        ObserveTask(Task.Run(async () =>
         {
             using var scope = _scopeFactory.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IPublisher>();
 
             await mediator.Publish(notification, CancellationToken.None);
-        }, CancellationToken.None);
+        }, CancellationToken.None));
     }
 
     /// <inheritdoc />
     public void Publish<TNotification>(MediatorNamespace ns, TNotification notification)
         where TNotification : INotification
     {
-        _ = Task.Run(async () =>
+        ObserveTask(Task.Run(async () =>
         {
             using var scope = _scopeFactory.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IPublisher>();
 
             await mediator.Publish(ns, notification, CancellationToken.None);
-        }, CancellationToken.None);
+        }, CancellationToken.None));
+    }
+
+    /// <summary>
+    /// Observes faulted fire-and-forget tasks so they do not trigger
+    /// <see cref="TaskScheduler.UnobservedTaskException"/> and crash the process.
+    /// </summary>
+    private static void ObserveTask(Task task)
+    {
+        task.ContinueWith(
+            static t => GC.KeepAlive(t.Exception),
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 }

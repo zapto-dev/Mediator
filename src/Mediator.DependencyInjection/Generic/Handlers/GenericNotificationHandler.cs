@@ -24,6 +24,13 @@ internal interface IHandlerRegistration
 {
     INotificationCache Owner { get; }
 
+    /// <summary>
+    /// Set to <c>true</c> under <see cref="INotificationCache.Lock"/> when the
+    /// handler is disposed. Checked (without lock) as a best-effort guard in
+    /// <see cref="InvokeAsync"/> to skip already-disposed handlers.
+    /// </summary>
+    bool IsDisposed { get; set; }
+
     ValueTask InvokeAsync(IServiceProvider provider, object notification, CancellationToken cancellationToken);
 }
 
@@ -53,7 +60,8 @@ internal sealed class GenericNotificationCache<TNotification> : INotificationCac
         }
     }
 
-    public List<Type>? HandlerTypes { get; set; }
+    private List<Type>? _handlerTypes;
+    public List<Type>? HandlerTypes { get => Volatile.Read(ref _handlerTypes); set => Volatile.Write(ref _handlerTypes, value); }
 
     public List<GenericNotificationRegistration> MatchingRegistrations { get; }
 
