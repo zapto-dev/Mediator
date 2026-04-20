@@ -9,6 +9,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-73j8-2gch-69rq" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\..\src\Mediator.DependencyInjection\Mediator.DependencyInjection.csproj" />
         <ProjectReference Include="..\..\src\Mediator\Mediator.csproj" />
     </ItemGroup>
