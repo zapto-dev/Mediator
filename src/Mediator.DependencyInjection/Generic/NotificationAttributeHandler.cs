@@ -13,7 +13,7 @@ internal static class NotificationAttributeHandler<T>
 {
     static NotificationAttributeHandler()
     {
-        foreach (var method in typeof(T).GetMethods())
+        foreach (var method in typeof(T).GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
         {
             var attribute = method.GetCustomAttribute<NotificationHandlerAttribute>();
 

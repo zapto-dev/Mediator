@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Zapto.Mediator.Generator;
 using VerifyXunit;
 using Xunit;
@@ -47,6 +49,34 @@ public class RequestHandler<T> : IRequestHandler<Request<T>>
         return TestHelper.Verify<SenderGenerator>(source, typeof(Zapto.Mediator.ServiceProviderMediator));
     }
     
+    [Fact]
+    public void RegisterHandlerWithMultipleInterfacesOnce()
+    {
+        const string source = @"
+using MediatR;
+using Zapto.Mediator;
+
+public record NotificationA : INotification;
+
+public record NotificationB : INotification;
+
+public record NotificationC : INotification;
+
+public class NotificationHandler : INotificationHandler<NotificationA>, INotificationHandler<NotificationB>, INotificationHandler<NotificationC>
+{
+    public ValueTask Handle(IServiceProvider provider, NotificationA notification, CancellationToken cancellationToken) => default;
+    public ValueTask Handle(IServiceProvider provider, NotificationB notification, CancellationToken cancellationToken) => default;
+    public ValueTask Handle(IServiceProvider provider, NotificationC notification, CancellationToken cancellationToken) => default;
+}";
+
+        var result = TestHelper.Run<SenderGenerator>(source, typeof(Zapto.Mediator.ServiceProviderMediator)).GetRunResult();
+        var assemblyExtensions = result.GeneratedTrees
+            .Single(i => i.FilePath.EndsWith("AssemblyExtensions.g.cs"))
+            .ToString();
+
+        Assert.Single(Regex.Matches(assemblyExtensions, Regex.Escape("builder.AddNotificationHandler(typeof(global::NotificationHandler));")));
+    }
+
     [Fact]
     public Task IgnoreHandlerAttribute()
     {

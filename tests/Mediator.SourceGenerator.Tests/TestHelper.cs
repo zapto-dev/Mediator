@@ -18,6 +18,12 @@ public static class TestHelper
     public static Task Verify<TGenerator>(string source, params Type[] extraTypes)
         where TGenerator : class, IIncrementalGenerator, new()
     {
+        return Verifier.Verify(Run<TGenerator>(source, extraTypes));
+    }
+
+    public static GeneratorDriver Run<TGenerator>(string source, params Type[] extraTypes)
+        where TGenerator : class, IIncrementalGenerator, new()
+    {
         SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source);
 
         var references = new List<MetadataReference>()
@@ -43,8 +49,6 @@ public static class TestHelper
 
         GeneratorDriver driver = CSharpGeneratorDriver.Create(generator);
 
-        driver = driver.RunGenerators(compilation);
-
-        return Verifier.Verify(driver);
+        return driver.RunGenerators(compilation);
     }
 }

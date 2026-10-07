@@ -116,26 +116,26 @@ public class SenderGenerator : IIncrementalGenerator
         using (sb.CodeBlock("internal static class AssemblyExtensions"))
         using (sb.CodeBlock($"public static {builder} AddAssemblyHandlers(this {builder} builder)"))
         {
+            var added = new HashSet<(string Method, SimpleType Type)>();
+
             foreach (var (type, handler) in handlers)
             {
-                if (handler.Interface.Name is "IRequestHandler")
+                var method = handler.Interface.Name switch
                 {
-                    sb.Append("builder.AddRequestHandler(typeof(");
-                    sb.AppendType(type, addNullable: false, addGenericNames: false);
-                    sb.AppendLine("));");
-                }
-                else if (handler.Interface.Name == "INotificationHandler")
+                    "IRequestHandler" => "AddRequestHandler",
+                    "INotificationHandler" => "AddNotificationHandler",
+                    "IStreamRequestHandler" => "AddStreamRequestHandler",
+                    _ => null
+                };
+
+                if (method is null || !added.Add((method, type)))
                 {
-                    sb.Append("builder.AddNotificationHandler(typeof(");
-                    sb.AppendType(type, addNullable: false, addGenericNames: false);
-                    sb.AppendLine("));");
+                    continue;
                 }
-                else if (handler.Interface.Name == "IStreamRequestHandler")
-                {
-                    sb.Append("builder.AddStreamRequestHandler(typeof(");
-                    sb.AppendType(type, addNullable: false, addGenericNames: false);
-                    sb.AppendLine("));");
-                }
+
+                sb.Append($"builder.{method}(typeof(");
+                sb.AppendType(type, addNullable: false, addGenericNames: false);
+                sb.AppendLine("));");
             }
 
             sb.AppendLine("return builder;");
